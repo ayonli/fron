@@ -29,10 +29,10 @@ Currently these types in NodeJS are considered:
 
 *If there are versions for other platforms, they may not include all these types*
 *or presented in different forms. That said, those implementations should be*
-*look-like the NodeJS version as much as they can and transfer these types to*
+*look-like the NodeJS version as much as they can and translate these types to*
 *platform alternatives instead.*
 
-Each of these types produces strings like the following examples:
+Each of these types are translated to strings like the following examples:
 
 ```javascript
 // Array
