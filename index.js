@@ -1,1 +1,6 @@
-throw new ReferenceError("The implementation of FRON is not yet available.");
+var buf = Buffer.from("hello, world");
+
+console.log(buf.buffer)
+for (let item of buf) {
+    console.log(item);
+}
