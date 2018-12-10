@@ -21,7 +21,7 @@ Currently these types in NodeJS are considered:
 - `Object`
 - `RegExp`
 - `Set`
-- `String` Supports multi-line strings via using backquote as ES2015 suggested.
+- `String` Supports multi-line strings via using backquotes as ES2015 suggested.
 - `Symbol` Only supports symbols registered via `Symbol.for()`.
 - `Unknown` Represents the **received** type is not valid on the platform, only 
     for parsing phase, when stringifying, data of unknown types are treated as
@@ -84,8 +84,8 @@ Infinity
 Set([1, 2, 3, 4])
 
 // String
-'single quote string'
-"double quote string"
+'single-quoted string'
+"double-quoted string"
 `string
 in
 multiple
@@ -128,7 +128,7 @@ suitable, the result will be `null`.
 ```javascript
 var fronStr = `
 {
-    someData: Exception({ code: 1001, message: "someting wen wrong" })
+    someData: Exception({ code: 1001, message: "something went wrong" })
 }
 `;
 var data = FRON.parse(fronStr, true);
@@ -137,7 +137,7 @@ console.log(data);
 // {
 //   someData: {
 //     code: 1001,
-//     message: "someting wen wrong"
+//     message: "something went wrong"
 //   }
 // }
 ```
@@ -176,7 +176,7 @@ FROM.register(Exception.name, Exception.prototype);
 // now the previous FRON string can be parsed correctly
 var fronStr = `
 {
-    someData: Exception({ code: 1001, message: "someting wen wrong" })
+    someData: Exception({ code: 1001, message: "something went wrong" })
 }
 `;
 
@@ -186,19 +186,19 @@ console.log(data);
 // {
 //   someData: Exception {
 //     code: 1001,
-//     message: "someting wen wrong"
+//     message: "something went wrong"
 //   }
 // }
 ```
 
-**NOTE:** `Exception({ code: 1001, message: "someting wen wrong" })` only 
+**NOTE:** `Exception({ code: 1001, message: "something went wrong" })` only 
 indicates type `Exception` contains data 
-`{ code: 1001, message: "someting wen wrong" }`, it doesn't mean that the
+`{ code: 1001, message: "something went wrong" }`, it doesn't mean that the
 constructor takes the data as its argument.
 
-The third signature `FRON.register<T>(type: string, aliasOf: string)` allows you
-assigning a new type as alias to an existing type, this is very useful when a 
-different implementation uses a different name of type that based to that 
+The third signature `FRON.register<T>(type: string, aliasOf: string)` allows 
+user assigning a new type as alias to an existing type, this is very useful when
+a different implementation uses a different name of type that based on that 
 platform but can be handled with an existing approach. Typically, `Uint8Array` 
 is considered as an alias of `Buffer` in NodeJS.
 
