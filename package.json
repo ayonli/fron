@@ -1,0 +1,31 @@
+{
+  "name": "fron",
+  "version": "0.0.0",
+  "description": "Feature Rich Object Notation.",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyurl/fron.git"
+  },
+  "keywords": [
+    "json",
+    "object",
+    "notation",
+    "comment",
+    "date",
+    "error",
+    "buffer",
+    "map",
+    "set",
+    "regexp"
+  ],
+  "author": "Ayon Lee <i@hyurl.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hyurl/fron/issues"
+  },
+  "homepage": "https://github.com/hyurl/fron#readme"
+}
