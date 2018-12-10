@@ -145,9 +145,9 @@ console.log(data);
 ### Register
 
 ```typescript
-FRON.register<T>(constructor: new (...args) => T)
-FRON.register<T>(type: string, prototype: { toFRON(): any, fromFRON(data: any): T })
-FRON.register(type: string, aliasOf: string)
+FRON.register<T>(constructor: new (...args) => T): void
+FRON.register<T>(type: string, prototype: { toFRON(): any, fromFRON(data: any): T }): void
+FRON.register(type: string, aliasOf: string): void
 ```
 
 Registers a customized data type so that the stringifier and parser can identify

@@ -1,0 +1,1 @@
+throw new ReferenceError("The implementation of FRON is not yet available.");
