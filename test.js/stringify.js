@@ -43,4 +43,4 @@ data.obj["ha ha ha"]["depth"] = {
     cir: data.obj["ha ha ha"]
 };
 
-console.log(stringify(data.obj, "    "));
+console.log(stringify(data.obj, false));
