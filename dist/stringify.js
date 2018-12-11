@@ -1,191 +1,146 @@
-import { getType, isObjectType } from './types';
-import { escape } from "safe-string-literal";
-
-export function stringify(data: any, pretty?: boolean | string) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const types_1 = require("./types");
+const safe_string_literal_1 = require("safe-string-literal");
+function stringify(data, pretty) {
     let indent = "";
-
     if (pretty) {
         indent = typeof pretty == "string" ? pretty : "  ";
     }
-
     return stringifyCommon(data, indent, indent, "", new Map());
 }
-
-export const CustomHandlers: { [type: string]: () => any } = {};
-
-export function registerToFron(type: string, toFRON: () => any) {
-    CustomHandlers[type] = toFRON;
+exports.stringify = stringify;
+exports.CustomHandlers = {};
+function registerToFron(type, toFRON) {
+    exports.CustomHandlers[type] = toFRON;
 }
-
-function getValues<T>(data: Iterable<T>): T[] {
+exports.registerToFron = registerToFron;
+function getValues(data) {
     let arr = [];
     for (let item of data) {
         arr.push(item);
     }
     return arr;
 }
-
-function stringifyCommon(
-    data: any,
-    indent: string,
-    originalIndent: string,
-    path: string,
-    refMap: Map<any, string>
-): string {
-    let type = getType(data);
-
+function stringifyCommon(data, indent, originalIndent, path, refMap) {
+    let type = types_1.getType(data);
     if (!type || type == "function") {
         return;
-    } else if (type == "null") {
+    }
+    else if (type == "null") {
         return type;
-    } else if (type == "string") {
-        return '"' + escape(data, "'`") + '"';
-    } else if (type == "symbol") {
+    }
+    else if (type == "string") {
+        return '"' + safe_string_literal_1.escape(data, "'`") + '"';
+    }
+    else if (type == "symbol") {
         let key = Symbol.keyFor(data);
         return key === undefined ? void 0 : "Symbol(" + stringify(key) + ")";
-    } else if ((isObjectType(type))) {
+    }
+    else if ((types_1.isObjectType(type))) {
         if (refMap.has(data)) {
             return "Reference(" + stringify(refMap.get(data)) + ")";
-        } else {
+        }
+        else {
             refMap.set(data, path);
             return getHandler(type, indent, originalIndent, path, refMap)(data);
         }
-    } else {
+    }
+    else {
         return String(data);
     }
 }
-
-function stringifyMixed(
-    type: string,
-    data: any,
-    indent: string,
-    originalIndent: string,
-    path: string,
-    refMap: Map<any, string>
-) {
+function stringifyMixed(type, data, indent, originalIndent, path, refMap) {
     return type + "("
         + stringifyCommon(data, indent, originalIndent, path, refMap)
         + ")";
 }
-
-function stringifyIterable<T>(
-    type: string,
-    data: Iterable<T>,
-    indent: string,
-    originalIndent: string,
-    path: string,
-    refMap: Map<any, string>
-): string {
+function stringifyIterable(type, data, indent, originalIndent, path, refMap) {
     data = getValues(data);
     return stringifyMixed(type, data, indent, originalIndent, path, refMap);
 }
-
-function getHandler(
-    type: string,
-    indent: string,
-    originalIndent: string,
-    path: string,
-    refMap: Map<any, string>
-): (data: any) => string {
+function getHandler(type, indent, originalIndent, path, refMap) {
     var handlers = {
-        "String": (data: String) => 'String(' + stringify(String(data)) + ')',
-        "Boolean": (data: Boolean) => "Boolean(" + String(data) + ")",
-        "Number": (data: Number) => "Number(" + String(data) + ")",
-        "Date": (data: Date) => "Date(" + stringify(data.toISOString()) + ")",
-        "RegExp": (data: RegExp) => String(data),
-        "Buffer": (data: Buffer) => {
+        "String": (data) => 'String(' + stringify(String(data)) + ')',
+        "Boolean": (data) => "Boolean(" + String(data) + ")",
+        "Number": (data) => "Number(" + String(data) + ")",
+        "Date": (data) => "Date(" + stringify(data.toISOString()) + ")",
+        "RegExp": (data) => String(data),
+        "Buffer": (data) => {
             return stringifyIterable("Buffer", data, indent, originalIndent, path, refMap);
         },
-        "Map": (data: Buffer) => {
+        "Map": (data) => {
             return stringifyIterable("Map", data, indent, originalIndent, path, refMap);
         },
-        "Set": (data: Buffer) => {
+        "Set": (data) => {
             return stringifyIterable("Set", data, indent, originalIndent, path, refMap);
         },
-        "Error": (data: Error) => {
+        "Error": (data) => {
             let res = {
                 name: data.name,
                 message: data.message,
                 stack: data.stack
             };
-
             for (let x in data) {
                 if (x !== "name" && x !== "message" && x !== "stack") {
                     res[x] = data[x];
                 }
             }
-
             return stringifyMixed("Error", res, indent, originalIndent, path, refMap);
         },
-        "Object": (data: any) => {
-            let isVar = /^[a-z_][a-z0-9_]*$/i,
-                container: string[] = [];
-
+        "Object": (data) => {
+            let isVar = /^[a-z_][a-z0-9_]*$/i, container = [];
             if (typeof data.toFRON == "function") {
                 data = data.toFRON();
             }
-
             for (let x in data) {
                 let _isVar = isVar.test(x);
                 let _path = path ? path + (_isVar ? `.${x}` : `['${x}']`) : x;
-                let res = stringifyCommon(
-                    data[x],
-                    indent + originalIndent,
-                    originalIndent,
-                    _path,
-                    refMap
-                );
-
+                let res = stringifyCommon(data[x], indent + originalIndent, originalIndent, _path, refMap);
                 if (res !== undefined) {
                     if (indent) {
                         container.push((_isVar ? x : stringify(x)) + `: ${res}`);
-                    } else {
+                    }
+                    else {
                         container.push((_isVar ? x : stringify(x)) + `:${res}`);
                     }
                 }
             }
-
             if (indent && container.length) {
                 return "{\n"
                     + indent + container.join(", \n" + indent) + "\n"
                     + indent.slice(0, -originalIndent.length) + "}";
-            } else {
+            }
+            else {
                 return "{" + container.join(",") + "}";
             }
         },
-        "Array": (data: any[]) => {
-            let container: string[] = [];
-
+        "Array": (data) => {
+            let container = [];
             for (let i = 0; i < data.length; i++) {
-                let res = stringifyCommon(
-                    data[i],
-                    indent + originalIndent,
-                    originalIndent,
-                    `${path}[${i}]`,
-                    refMap
-                );
-
-                (res !== undefined) && container.push(<string>res);
+                let res = stringifyCommon(data[i], indent + originalIndent, originalIndent, `${path}[${i}]`, refMap);
+                (res !== undefined) && container.push(res);
             }
-
             if (indent && container.length) {
                 return "[\n"
                     + indent + container.join(", \n" + indent) + "\n"
                     + indent.slice(0, -originalIndent.length) + "]";
-            } else {
+            }
+            else {
                 return "[" + container.join(",") + "]";
             }
         },
     };
-
     if (handlers[type]) {
         return handlers[type];
-    } else if (CustomHandlers[type]) {
-        return (data: any) => {
-            data = CustomHandlers[type].apply(data);
+    }
+    else if (exports.CustomHandlers[type]) {
+        return (data) => {
+            data = exports.CustomHandlers[type].apply(data);
             return type + "("
                 + stringifyCommon(data, indent, originalIndent, path, refMap)
                 + ")";
-        }
+        };
     }
 }
+//# sourceMappingURL=stringify.js.map

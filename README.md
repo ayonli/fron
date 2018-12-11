@@ -23,6 +23,8 @@ Currently these types in NodeJS are considered:
 - `Set`
 - `String` Supports multi-line strings via using backquotes as ES2015 suggested.
 - `Symbol` Only supports symbols registered via `Symbol.for()`.
+- `Reference` References to one of the nodes of the object, regardless of 
+    circulation.
 - `Unknown` Represents the **received** type is not valid on the platform, only 
     for parsing phase, when stringifying, data of unknown types are treated as
     `Object`s.
@@ -93,6 +95,12 @@ lines`
 
 // Symbol
 Symbol("description")
+
+// Reference
+Reference("") // circular reference to the root object.
+Reference("abc")
+Reference("abc.def")
+Reference("abc['d e f']")
 ```
 
 ## API
