@@ -1,72 +1,72 @@
 {
-    "hello world!": "Hello,\tWorld!", 
+    "hello world!": "Hello,\tWorld!",
     hi: [
-        "Hello, World!", 
+        "Hello, World!",
         "Hi, FRON"
-    ], 
-    date: Date("2018-12-11T10:20:44.229Z"), 
-    num: 12345, 
-    num2: Number(12345), 
+    ],
+    date: Date("2018-12-11T11:53:54.236Z"),
+    num: 12345,
+    num2: Number(12345),
     err: TypeError({
-        name: "TypeError", 
-        message: "something went wrong", 
-        stack: "TypeError: something went wrong\n    at Object.<anonymous> (D:\\git\\fron\\test.js\\stringify.js:24:24)\n    at Module._compile (module.js:652:30)\n    at Object.Module._extensions..js (module.js:663:10)\n    at Module.load (module.js:565:32)\n    at tryModuleLoad (module.js:505:12)\n    at Function.Module._load (module.js:497:3)\n    at Function.Module.runMain (module.js:693:10)\n    at startup (bootstrap_node.js:191:16)\n    at bootstrap_node.js:612:3", 
+        name: "TypeError",
+        message: "something went wrong",
+        stack: "TypeError: something went wrong\n    at Object.<anonymous> (/home/hyurl/git/fron/test/stringify.js:24:24)\n    at Module._compile (internal/modules/cjs/loader.js:707:30)\n    at Object.Module._extensions..js (internal/modules/cjs/loader.js:718:10)\n    at Module.load (internal/modules/cjs/loader.js:605:32)\n    at tryModuleLoad (internal/modules/cjs/loader.js:544:12)\n    at Function.Module._load (internal/modules/cjs/loader.js:536:3)\n    at Function.Module.runMain (internal/modules/cjs/loader.js:760:12)\n    at startup (internal/bootstrap/node.js:308:19)\n    at bootstrapNodeJSCore (internal/bootstrap/node.js:878:3)",
         code: 500
-    }), 
-    bool: true, 
-    bool2: Boolean(false), 
+    }),
+    bool: true,
+    bool2: Boolean(false),
     map: Map([
         [
-            "a", 
+            "a",
             1
-        ], 
+        ],
         [
-            "b", 
+            "b",
             2
         ]
-    ]), 
+    ]),
     set: Set([
         [
             "a"
-        ], 
+        ],
         [
             "b"
         ]
-    ]), 
-    nul: null, 
-    symbol: Symbol("hello"), 
+    ]),
+    nul: null,
+    symbol: Symbol("hello"),
     buf: Buffer([
-        104, 
-        101, 
-        108, 
-        108, 
-        111, 
-        44, 
-        32, 
-        119, 
-        111, 
-        114, 
-        108, 
-        100, 
+        104,
+        101,
+        108,
+        108,
+        111,
+        44,
+        32,
+        119,
+        111,
+        114,
+        108,
+        100,
         33
-    ]), 
-    re: /\\[a-z]/i, 
+    ]),
+    re: /\\[a-z]/i,
     obj: {
-        hello: "world!", 
+        hello: "world!",
         ha: {
             ha: Reference("")
-        }, 
-        "ha ha": Reference("obj"), 
+        },
+        "ha ha": Reference("obj"),
         "ha ha ha": {
             depth: {
                 cir: Reference("obj['ha ha ha']")
             }
         }
-    }, 
-    arr: [], 
+    },
+    arr: [],
     user: User({
-        name: "Ayon Lee", 
+        name: "Ayon Lee",
         age: 23
-    }), 
+    }),
     obj2: Reference("")
 }
