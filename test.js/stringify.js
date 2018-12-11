@@ -1,5 +1,6 @@
 const { stringify } = require("../dist/stringify");
 const { register } = require("../dist/index");
+const fs = require("fs");
 
 class User {
     constructor(name, age) {
@@ -43,4 +44,5 @@ data.obj["ha ha ha"]["depth"] = {
     cir: data.obj["ha ha ha"]
 };
 
-console.log(stringify(data.obj, false));
+let fron = stringify(data, "    ");
+fs.writeFileSync("test.fron", fron, "utf8");

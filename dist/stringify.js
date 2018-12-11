@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const types_1 = require("./types");
 const safe_string_literal_1 = require("safe-string-literal");
+const assert_1 = require("assert");
 function stringify(data, pretty) {
     let indent = "";
     if (pretty) {
@@ -86,7 +87,7 @@ function getHandler(type, indent, originalIndent, path, refMap) {
                     res[x] = data[x];
                 }
             }
-            return stringifyMixed("Error", res, indent, originalIndent, path, refMap);
+            return stringifyMixed(type, res, indent, originalIndent, path, refMap);
         },
         "Object": (data) => {
             let isVar = /^[a-z_][a-z0-9_]*$/i, container = [];
@@ -131,6 +132,17 @@ function getHandler(type, indent, originalIndent, path, refMap) {
             }
         },
     };
+    var Errors = [
+        assert_1.AssertionError,
+        EvalError,
+        RangeError,
+        ReferenceError,
+        SyntaxError,
+        TypeError
+    ];
+    for (let type of Errors) {
+        handlers[type.name] = handlers["Error"];
+    }
     if (handlers[type]) {
         return handlers[type];
     }

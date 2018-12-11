@@ -1,5 +1,6 @@
 import { getType, isObjectType } from './types';
 import { escape } from "safe-string-literal";
+import { AssertionError } from 'assert';
 
 export function stringify(data: any, pretty?: boolean | string) {
     let indent = "";
@@ -115,7 +116,7 @@ function getHandler(
                 }
             }
 
-            return stringifyMixed("Error", res, indent, originalIndent, path, refMap);
+            return stringifyMixed(type, res, indent, originalIndent, path, refMap);
         },
         "Object": (data: any) => {
             let isVar = /^[a-z_][a-z0-9_]*$/i,
@@ -177,6 +178,20 @@ function getHandler(
             }
         },
     };
+
+    var Errors = [
+        AssertionError,
+        // Error,
+        EvalError,
+        RangeError,
+        ReferenceError,
+        SyntaxError,
+        TypeError
+    ];
+    
+    for (let type of Errors) {
+        handlers[type.name] = handlers["Error"];
+    }
 
     if (handlers[type]) {
         return handlers[type];

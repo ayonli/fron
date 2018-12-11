@@ -1,0 +1,72 @@
+{
+    "hello world!": "Hello,\tWorld!", 
+    hi: [
+        "Hello, World!", 
+        "Hi, FRON"
+    ], 
+    date: Date("2018-12-11T10:20:44.229Z"), 
+    num: 12345, 
+    num2: Number(12345), 
+    err: TypeError({
+        name: "TypeError", 
+        message: "something went wrong", 
+        stack: "TypeError: something went wrong\n    at Object.<anonymous> (D:\\git\\fron\\test.js\\stringify.js:24:24)\n    at Module._compile (module.js:652:30)\n    at Object.Module._extensions..js (module.js:663:10)\n    at Module.load (module.js:565:32)\n    at tryModuleLoad (module.js:505:12)\n    at Function.Module._load (module.js:497:3)\n    at Function.Module.runMain (module.js:693:10)\n    at startup (bootstrap_node.js:191:16)\n    at bootstrap_node.js:612:3", 
+        code: 500
+    }), 
+    bool: true, 
+    bool2: Boolean(false), 
+    map: Map([
+        [
+            "a", 
+            1
+        ], 
+        [
+            "b", 
+            2
+        ]
+    ]), 
+    set: Set([
+        [
+            "a"
+        ], 
+        [
+            "b"
+        ]
+    ]), 
+    nul: null, 
+    symbol: Symbol("hello"), 
+    buf: Buffer([
+        104, 
+        101, 
+        108, 
+        108, 
+        111, 
+        44, 
+        32, 
+        119, 
+        111, 
+        114, 
+        108, 
+        100, 
+        33
+    ]), 
+    re: /\\[a-z]/i, 
+    obj: {
+        hello: "world!", 
+        ha: {
+            ha: Reference("")
+        }, 
+        "ha ha": Reference("obj"), 
+        "ha ha ha": {
+            depth: {
+                cir: Reference("obj['ha ha ha']")
+            }
+        }
+    }, 
+    arr: [], 
+    user: User({
+        name: "Ayon Lee", 
+        age: 23
+    }), 
+    obj2: Reference("")
+}

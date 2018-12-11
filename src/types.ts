@@ -1,19 +1,25 @@
 import upperFirst = require("lodash/upperFirst");
-import { AssertionError } from "assert";
+// import { AssertionError } from "assert";
 
 export const ObjectTypes = {
+    "AssertionError": "AssertionError",
     "Array": "Array",
     "Boolean": "Boolean",
     "Buffer": "Buffer",
     "Date": "Date",
     "Error": "Error",
+    "EvalError": "EvalError",
     "Map": "Map",
     "Number": "Number",
     "Object": "Object",
+    "RangeError": "RangeError",
+    "ReferenceError": "ReferenceError",
     "RegExp": "RegExp",
     "Set": "Set",
     "String": "String",
-    "Unknown": "Unknown"
+    "SyntaxError": "SyntaxError",
+    "Unknown": "Unknown",
+    "TypeError": "TypeError"
 };
 
 export function isObjectType(type: string) {
@@ -49,16 +55,16 @@ export function registerType(type: string, name: string) {
 export default ObjectTypes;
 
 // register all error types as aliases of Error
-var Errors = [
-    AssertionError,
-    // Error,
-    EvalError,
-    RangeError,
-    ReferenceError,
-    SyntaxError,
-    TypeError
-];
+// var Errors = [
+//     AssertionError,
+//     // Error,
+//     EvalError,
+//     RangeError,
+//     ReferenceError,
+//     SyntaxError,
+//     TypeError
+// ];
 
-for (let type of Errors) {
-    registerType(type.name, "Error");
-}
+// for (let type of Errors) {
+//     registerType(type.name, "Error");
+// }

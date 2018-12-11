@@ -1,20 +1,25 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const upperFirst = require("lodash/upperFirst");
-const assert_1 = require("assert");
 exports.ObjectTypes = {
+    "AssertionError": "AssertionError",
     "Array": "Array",
     "Boolean": "Boolean",
     "Buffer": "Buffer",
     "Date": "Date",
     "Error": "Error",
+    "EvalError": "EvalError",
     "Map": "Map",
     "Number": "Number",
     "Object": "Object",
+    "RangeError": "RangeError",
+    "ReferenceError": "ReferenceError",
     "RegExp": "RegExp",
     "Set": "Set",
     "String": "String",
-    "Unknown": "Unknown"
+    "SyntaxError": "SyntaxError",
+    "Unknown": "Unknown",
+    "TypeError": "TypeError"
 };
 function isObjectType(type) {
     return !!exports.ObjectTypes[type];
@@ -46,15 +51,4 @@ function registerType(type, name) {
 }
 exports.registerType = registerType;
 exports.default = exports.ObjectTypes;
-var Errors = [
-    assert_1.AssertionError,
-    EvalError,
-    RangeError,
-    ReferenceError,
-    SyntaxError,
-    TypeError
-];
-for (let type of Errors) {
-    registerType(type.name, "Error");
-}
 //# sourceMappingURL=types.js.map
