@@ -7,7 +7,7 @@
         "outDir": "dist/",
         "experimentalDecorators": true,
         "newLine": "LF",
-        "noUnusedParameters": true,
+        "noUnusedParameters": false,
         "noUnusedLocals": true,
         "importHelpers": true,
         "pretty": true,
