@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const types_1 = require("./types");
-const safe_string_literal_1 = require("safe-string-literal");
+const literal_toolkit_1 = require("literal-toolkit");
 const assert_1 = require("assert");
 function stringify(data, pretty) {
     let indent = "";
@@ -32,7 +32,7 @@ function stringifyCommon(data, indent, originalIndent, path, refMap) {
         return type;
     }
     else if (type == "string") {
-        return '"' + safe_string_literal_1.escape(data, "'`") + '"';
+        return literal_toolkit_1.string.toLiteral(data);
     }
     else if (type == "symbol") {
         let key = Symbol.keyFor(data);

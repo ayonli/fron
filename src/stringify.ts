@@ -1,5 +1,5 @@
 import { getType, isObjectType } from './types';
-import { escape } from "safe-string-literal";
+import { string } from "literal-toolkit";
 import { AssertionError } from 'assert';
 
 export function stringify(data: any, pretty?: boolean | string) {
@@ -40,7 +40,7 @@ function stringifyCommon(
     } else if (type == "null") {
         return type;
     } else if (type == "string") {
-        return '"' + escape(data, "'`") + '"';
+        return string.toLiteral(data);
     } else if (type == "symbol") {
         let key = Symbol.keyFor(data);
         return key === undefined ? void 0 : "Symbol(" + stringify(key) + ")";

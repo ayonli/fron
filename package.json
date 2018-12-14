@@ -35,6 +35,7 @@
     "mocha": "^5.2.0"
   },
   "dependencies": {
+    "literal-toolkit": "^1.0.0",
     "lodash": "^4.17.11",
     "safe-string-literal": "^1.0.0"
   }
