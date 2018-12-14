@@ -148,7 +148,7 @@ function getHandler(
 
             if (indent && container.length) {
                 return "{\n"
-                    + indent + container.join(", \n" + indent) + "\n"
+                    + indent + container.join(",\n" + indent) + "\n"
                     + indent.slice(0, -originalIndent.length) + "}";
             } else {
                 return "{" + container.join(",") + "}";
@@ -171,7 +171,7 @@ function getHandler(
 
             if (indent && container.length) {
                 return "[\n"
-                    + indent + container.join(", \n" + indent) + "\n"
+                    + indent + container.join(",\n" + indent) + "\n"
                     + indent.slice(0, -originalIndent.length) + "]";
             } else {
                 return "[" + container.join(",") + "]";

@@ -109,7 +109,7 @@ function getHandler(type, indent, originalIndent, path, refMap) {
             }
             if (indent && container.length) {
                 return "{\n"
-                    + indent + container.join(", \n" + indent) + "\n"
+                    + indent + container.join(",\n" + indent) + "\n"
                     + indent.slice(0, -originalIndent.length) + "}";
             }
             else {
@@ -124,7 +124,7 @@ function getHandler(type, indent, originalIndent, path, refMap) {
             }
             if (indent && container.length) {
                 return "[\n"
-                    + indent + container.join(", \n" + indent) + "\n"
+                    + indent + container.join(",\n" + indent) + "\n"
                     + indent.slice(0, -originalIndent.length) + "]";
             }
             else {
