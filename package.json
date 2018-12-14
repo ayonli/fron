@@ -30,14 +30,14 @@
   },
   "homepage": "https://github.com/hyurl/fron#readme",
   "devDependencies": {
-    "@types/lodash": "^4.14.118",
-    "@types/node": "^10.12.12",
+    "@types/lodash": "^4.14.119",
+    "@types/node": "^10.12.15",
     "mocha": "^5.2.0",
     "source-map-support": "^0.5.9"
   },
   "dependencies": {
-    "literal-toolkit": "^1.0.0",
+    "literal-toolkit": "^1.0.1",
     "lodash": "^4.17.11",
-    "safe-string-literal": "^1.0.0"
+    "safe-string-literal": "^1.0.1"
   }
 }
