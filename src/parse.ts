@@ -3,6 +3,9 @@ import { ObjectTypes } from "./types";
 import { string, number, regexp, comment, keyword } from 'literal-toolkit';
 import last = require("lodash/last");
 import pick = require("lodash/pick");
+import omit = require("lodash/omit");
+import { AssertionError } from 'assert';
+import * as fs from "fs";
 
 export interface DataToken {
     filename?: string;
@@ -15,7 +18,7 @@ export interface DataToken {
 }
 
 // const CharRE = /\S/;
-const TypeOrPorp = /\s*([a-z_][a-z0-9_]*)\s*[:\(]/i;
+const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
 
 function throwSyntaxError(token: DataToken) {
     throw new SyntaxError(`Unexpected ${token.type || "FRON"} token in ${token.filename || "<anonymous>"}:${token.line}:${token.column}`);
@@ -32,20 +35,29 @@ var tokenSample: DataToken = {
 function parseToken(str: string, token: DataToken = Object.assign({}, tokenSample)): DataToken {
     let char: string;
     let isInnerToken = !!token.parent,
-        isPropValue = false,
+        lastProp = "",
         setTokenData = (value) => {
             if (token.parent) {
                 if (token.parent.type === ObjectTypes.Object) {
                     if (!token.data) token.data = {};
 
-                    if (!isPropValue) {
+                    if (!lastProp) {
+                        lastProp = value;
                         token.data[value] = undefined;
                     } else {
-                        token.data[last(Object.keys(token.data))] = value;
+                        token.data[lastProp] = value;
                     }
-                } else { // array
+                } else if (token.parent.type === ObjectTypes.Array) { // array
                     if (!token.data) token.data = [];
                     token.data.push(value);
+                } else {
+                    let handle = getHandler(token.parent.type);
+
+                    if (handle) {
+                        token.data = handle(value);
+                    } else {
+                        token.data = value;
+                    }
                 }
             } else {
                 token.data = value;
@@ -56,14 +68,24 @@ function parseToken(str: string, token: DataToken = Object.assign({}, tokenSampl
         if (char === "\n") {
             token.line++;
             token.cursor++;
-            continue;
-        } else if ((<any>char == false && char !== "0")) {
+            token.column = 1;
+        } else if ((<any>char == false && char !== "0") || char === "(" || char === ")") {
             token.column++;
             token.cursor++;
-            continue;
+
+            if (char === ")") {
+                break;
+            }
         } else if (char === ",") {
             if (isInnerToken) {
-                isPropValue = false;
+                lastProp = "";
+                token.column++;
+                token.cursor++;
+            } else {
+                throwSyntaxError(token);
+            }
+        } else if (char === ":") {
+            if (isInnerToken) {
                 token.column++;
                 token.cursor++;
             } else {
@@ -93,7 +115,7 @@ function parseToken(str: string, token: DataToken = Object.assign({}, tokenSampl
                         token.cursor = endPos + 1;
                         setTokenData(parseToken(innerStr, Object.assign({
                             parent: token
-                        }, tokenSample, pick(token, ["line", "column"]))));
+                        }, tokenSample, pick(token, ["line", "column"]))).data);
                     }
                     break;
 
@@ -108,8 +130,14 @@ function parseToken(str: string, token: DataToken = Object.assign({}, tokenSampl
                     if (strToken) {
                         let lines = strToken.source.split("\n");
                         token.line += lines.length - 1;
-                        token.column = lines.length > 1 ? last(lines).length : strToken.length;
                         token.cursor += strToken.length;
+
+                        if (lines.length > 1) {
+                            token.column = last(lines).length;
+                        } else {
+                            token.column += strToken.length;
+                        }
+
                         setTokenData(strToken.value);
                     } else {
                         throwSyntaxError(token);
@@ -121,22 +149,27 @@ function parseToken(str: string, token: DataToken = Object.assign({}, tokenSampl
                     remains = str.slice(token.cursor);
 
                     let regexToken = regexp.parseToken(remains),
-                        commentToken: comment.CommentToken;
+                        cmtToken: comment.CommentToken;
 
                     if (regexToken) {
                         token.type = "regexp";
                         token.column += regexToken.length;
                         token.cursor += regexToken.length;
                         setTokenData(regexToken.value);
-                    } else if ((commentToken = comment.parseToken(remains))) {
+                    } else if ((cmtToken = comment.parseToken(remains))) {
                         token.type = "comment";
-                        token.cursor += commentToken.length;
-                        setTokenData(commentToken.value);
+                        token.cursor += cmtToken.length;
+                        // setTokenData(cmtToken.value);
 
-                        if (commentToken.type !== "//") {
-                            let lines = commentToken.source.split("\n");
+                        if (cmtToken.type !== "//") {
+                            let lines = cmtToken.source.split("\n");
                             token.line += lines.length - 1;
-                            token.column = lines.length > 1 ? last(lines).length : strToken.length;
+
+                            if (lines.length > 1) {
+                                token.column = last(lines).length;
+                            } else {
+                                token.column += cmtToken.length;
+                            }
                         }
                     } else {
                         throwSyntaxError(token);
@@ -183,25 +216,37 @@ function parseToken(str: string, token: DataToken = Object.assign({}, tokenSampl
                         let matches = remains.match(TypeOrPorp);
 
                         if (matches) {
+                            let lines = matches[0].split("\n");
+
+                            token.line += lines.length - 1;
+                            token.cursor += matches[0].length - 1;
+
+                            if (lines.length > 1) {
+                                token.column = last(lines).length - 1;
+                            } else {
+                                token.column += matches[0].length - 1;
+                            }
+
                             if (last(matches[0]) === ":") {
-                                if (!isPropValue) {
+                                if (!lastProp) {
                                     setTokenData(matches[1]);
-                                    isPropValue = true;
                                 } else {
                                     throwSyntaxError(token);
                                 }
                             } else {
-                                let lines = matches[0].split("\n");
-
-                                token.line += lines.length - 1;
-                                token.column = lines.length > 1 ? last(lines).length : strToken.length;
-                                token.cursor += matches[0].length;
-
                                 if (ObjectTypes[matches[1]]) {
                                     token.type = ObjectTypes[matches[1]];
                                 } else {
                                     token.type = ObjectTypes.Object;
                                 }
+
+                                let innerStr = str.slice(token.cursor),
+                                    innerToken = parseToken(innerStr, Object.assign({
+                                        parent: token
+                                    }, tokenSample, pick(token, ["line", "column", "type"])));
+
+                                setTokenData(innerToken.data);
+                                token.cursor += innerToken.cursor;
                             }
                         } else {
                             throwSyntaxError(token);
@@ -215,4 +260,54 @@ function parseToken(str: string, token: DataToken = Object.assign({}, tokenSampl
     return token;
 }
 
-console.log(parseToken('{ a: 0x12, b: { c: "hello, world" }, d: 12 }'))
+export function parse(str: string): any {
+    return parseToken(str).data;
+}
+
+const Errors = [
+    AssertionError,
+    Error,
+    EvalError,
+    RangeError,
+    ReferenceError,
+    SyntaxError,
+    TypeError
+];
+
+function getHandler(type: string): (data: any) => any {
+    let handlers = {
+        "String": (data: string) => new String(data),
+        "Number": (data: number) => new Number(data),
+        "Boolean": (data: boolean) => new Boolean(data),
+        "Date": (data: string) => new Date(data),
+        "Buffer": (data: number[]) => Buffer.from(data),
+        "Map": (data: [any, any][]) => new Map(data),
+        "Set": (data: any[]) => new Map(data),
+        "Error": (data: {
+            [x: string]: any;
+            name: string,
+            message: string,
+            stack: string
+        }) => {
+            let err = Object.create((Errors[data.name] || Error).prototype);
+            Object.defineProperties(err, {
+                name: { value: data.name },
+                message: { value: data.message },
+                stack: { value: data.stack }
+            });
+            Object.assign(err, omit(data, ["name", "message", "stack"]));
+            return err;
+        }
+    };
+
+    for (let type of Errors) {
+        if (type.name !== "Error")
+            handlers[type.name] = handlers["Error"];
+    }
+
+    return handlers[type];
+}
+
+var fron = fs.readFileSync("test.fron", "utf8");
+
+console.log(parse(fron));
