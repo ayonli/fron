@@ -1,0 +1,68 @@
+{
+    "hello world!": "Hello,\tWorld!",
+    hi: [
+        "Hello, World!",
+        "Hi, FRON"
+    ],
+    date: Date("2018-12-15T16:15:16.585Z"),
+    re: /\\[a-z]/i,
+    num: 12345,
+    num2: Number(12345),
+    err: TypeError({
+        name: "TypeError",
+        message: "something went wrong",
+        stack: "TypeError: something went wrong\n    at Object.<anonymous> (/home/hyurl/git/fron/test/stringify.js:25:24)\n    at Module._compile (internal/modules/cjs/loader.js:707:30)\n    at Object.Module._extensions..js (internal/modules/cjs/loader.js:718:10)\n    at Module.load (internal/modules/cjs/loader.js:605:32)\n    at tryModuleLoad (internal/modules/cjs/loader.js:544:12)\n    at Function.Module._load (internal/modules/cjs/loader.js:536:3)\n    at Function.Module.runMain (internal/modules/cjs/loader.js:760:12)\n    at startup (internal/bootstrap/node.js:308:19)\n    at bootstrapNodeJSCore (internal/bootstrap/node.js:878:3)",
+        code: 500
+    }),
+    bool: true,
+    bool2: Boolean(false),
+    map: Map([
+        [
+            "a",
+            1
+        ],
+        [
+            "b",
+            2
+        ]
+    ]),
+    set: Set([
+        "a",
+        "b"
+    ]),
+    nul: null,
+    symbol: Symbol("hello"),
+    buf: Buffer([
+        104,
+        101,
+        108,
+        108,
+        111,
+        44,
+        32,
+        119,
+        111,
+        114,
+        108,
+        100,
+        33
+    ]),
+    obj: {
+        hello: "world!",
+        ha: {
+            ha: Reference("")
+        },
+        "ha ha": Reference("obj"),
+        "ha ha ha": {
+            depth: {
+                cir: Reference("obj['ha ha ha']")
+            }
+        }
+    },
+    arr: [],
+    obj2: Reference(""),
+    user: User({
+        name: "Ayon Lee",
+        age: 23
+    })
+}
