@@ -19,20 +19,21 @@ var data = {
     "hello world!": "Hello,\tWorld!",
     hi: ["Hello, World!", "Hi, FRON"],
     date: new Date(),
+    re: new RegExp("\\\\[a-z]", 'i'),
     num: 12345,
     num2: new Number(12345),
     err: Object.assign(new TypeError("something went wrong"), { code: 500 }),
     bool: true,
     bool2: new Boolean(false),
     map: new Map([["a", 1], ["b", 2]]),
-    set: new Set([["a"], ["b"]]),
+    set: new Set(["a", "b"]),
     nul: null,
     symbol: Symbol.for("hello"),
     fn: () => { },
     buf: Buffer.from("hello, world!"),
-    re: new RegExp("\\\\[a-z]", 'i'),
     obj: { hello: "world!" },
     arr: [],
+    obj2: {},
     user: new User("Ayon Lee", 23)
 };
 data["obj2"] = data;
@@ -45,4 +46,4 @@ data.obj["ha ha ha"]["depth"] = {
 };
 
 let fron = stringify(data, "    ");
-fs.writeFileSync("test.fron", fron, "utf8");
+fs.writeFileSync(__dirname + "/test.fron", fron, "utf8");
