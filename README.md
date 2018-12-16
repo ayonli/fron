@@ -1,9 +1,9 @@
 # Feature-Rich Object Notation (proposal)
 
-JSON, even BSON, only supports a few types of objects. FRON (`/frʌn/`), is meant
-to support as many types as it can, and be feature-rich, especially for data 
-transmission scenarios like IPC, RPC, and data storage, to bring the closest 
-experience on both I/O sides.
+JSON, even BSON, only supports a few types of objects. FRON (`/frʌn/`), on the 
+other hand, is meant to support as many types as it can, and be feature-rich, 
+especially for data transmission scenarios like IPC, RPC, and data storage, to 
+bring the closest experience on both I/O sides.
 
 *FRON adopts basic JSON style, and is compatible with JSON data.*
 
@@ -25,16 +25,16 @@ Currently these types in NodeJS are considered:
 - `Symbol` Only supports symbols registered via `Symbol.for()`.
 - `Reference` References to one of the nodes of the object, regardless of 
     circulation.
-- `Unknown` Represents the **received** type is not valid on the platform, only 
-    for parsing phase, when stringifying, data of unknown types are treated as
-    `Object`s.
+- `Unknown` Represents the **received** type cannot be stringified or parsed 
+    into the deticated type, and will be handled as its closest type.
 
 *If there are versions for other platforms, they may not include all these types*
 *or presented in different forms. That said, those implementations should be*
 *look-like the NodeJS version as much as they can and translate these types to*
 *platform alternatives instead.*
 
-Each of these types are translated to strings like the following examples:
+Each of these types are translated to strings (with the same JavaScript syntax)
+like the following examples:
 
 ```javascript
 // Array
@@ -49,7 +49,7 @@ Buffer([1, 2, 3, 4])
 Buffer([0x01, 0x02, 0x03, 0x04])
 
 // Comment
-// inline comment
+// single-line comment
 /* inline comment */
 /*
 comment
@@ -122,14 +122,13 @@ with additional spaces.
 ### Parse
 
 ```typescript
-FRON.parse(data: string, parseUnknown?: boolean): any
-FRON.parseAsync(data: string, parseUnknown?: boolean): Promise<any>
+FRON.parse(data: string): any
+FRON.parseAsync(data: string): Promise<any>
 ```
 
-Parses the serialized FRON string to JavaScript object. By default, unknown data
-will not be parsed, unless setting `parseUnknown` option, the parser will ignore
-the type notation and parse the data according to the closest type, if no type 
-suitable, the result will be `null`.
+Parses the serialized FRON string to JavaScript object. By default, if meets 
+unknown types, the parser will ignore the type notation and parse the data 
+according to the closest type.
 
 #### Example of Unknown Type
 
@@ -199,12 +198,12 @@ console.log(data);
 // }
 ```
 
-**NOTE:** `Exception({ code: 1001, message: "something went wrong" })` only 
-indicates type `Exception` contains data 
+**NOTE:** Syntax `Exception({ code: 1001, message: "something went wrong" })` 
+only indicates type `Exception` contains data 
 `{ code: 1001, message: "something went wrong" }`, it doesn't mean that the
 constructor takes the data as its argument.
 
-The third signature `FRON.register<T>(type: string, aliasOf: string)` allows 
+The third signature `FRON.register<T>(type: string, aliasOf: string)` allows the
 user assigning a new type as alias to an existing type, this is very useful when
 a different implementation uses a different name of type that based on that 
 platform but can be handled with an existing approach. Typically, `Uint8Array` 
