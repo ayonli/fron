@@ -22,7 +22,12 @@ var data = {
     obj: { hello: "world!" },
     arr: [],
     obj2: {},
-    user: new User("Ayon Lee", 23)
+    user: new User("Ayon Lee", 23),
+    obj3: {
+        toFRON() {
+            return { name: "Ayonium" }
+        }
+    }
 };
 data["obj2"] = data;
 data.obj["ha"] = {};

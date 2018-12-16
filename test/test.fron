@@ -1,28 +1,18 @@
 {
-    12: 12,
+    "12": 12,
     "hello world!": "Hello,\tWorld!",
     hi: [
-        Reference("err"),
         "Hello, World!",
         "Hi, FRON"
     ],
-    date: Date("2018-12-16T07:50:56.984Z"),
+    date: Date("2018-12-16T15:29:59.521Z"),
     re: /\\[a-z]/i,
     num: 12345,
     num2: Number(12345),
     err: TypeError({
         name: "TypeError",
         message: "something went wrong",
-        stack: `TypeError: something went wrong
-    at Object.<anonymous> (/home/hyurl/git/fron/test/stringify.js:13:24)
-    at Module._compile (internal/modules/cjs/loader.js:707:30)
-    at Object.Module._extensions..js (internal/modules/cjs/loader.js:718:10)
-    at Module.load (internal/modules/cjs/loader.js:605:32)
-    at tryModuleLoad (internal/modules/cjs/loader.js:544:12)
-    at Function.Module._load (internal/modules/cjs/loader.js:536:3)
-    at Function.Module.runMain (internal/modules/cjs/loader.js:760:12)
-    at startup (internal/bootstrap/node.js:308:19)
-    at bootstrapNodeJSCore (internal/bootstrap/node.js:878:3)`,
+        stack: "TypeError: something went wrong\n    at Object.<anonymous> (/home/hyurl/git/fron/test/stringify.js:13:24)\n    at Module._compile (internal/modules/cjs/loader.js:707:30)\n    at Object.Module._extensions..js (internal/modules/cjs/loader.js:718:10)\n    at Module.load (internal/modules/cjs/loader.js:605:32)\n    at tryModuleLoad (internal/modules/cjs/loader.js:544:12)\n    at Function.Module._load (internal/modules/cjs/loader.js:536:3)\n    at Function.Module.runMain (internal/modules/cjs/loader.js:760:12)\n    at startup (internal/bootstrap/node.js:308:19)\n    at bootstrapNodeJSCore (internal/bootstrap/node.js:878:3)",
         code: 500
     }),
     bool: true,
@@ -59,14 +49,14 @@
         33
     ]),
     obj: {
-        hello: 'world!',
+        hello: "world!",
         ha: {
-            ha: Reference("obj")
+            ha: Reference("")
         },
         "ha ha": Reference("obj"),
         "ha ha ha": {
             depth: {
-                cir: Reference('obj["ha ha ha"]')
+                cir: Reference("obj['ha ha ha']")
             }
         }
     },
@@ -75,5 +65,8 @@
     user: User({
         name: "Ayon Lee",
         age: 23
-    })
+    }),
+    obj3: {
+        name: "Ayonium"
+    }
 }

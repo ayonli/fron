@@ -6,7 +6,6 @@ const pick = require("lodash/pick");
 const omit = require("lodash/omit");
 const upperFirst = require("lodash/upperFirst");
 const IsVar = /^[a-z_][a-z0-9_]*$/i;
-const CustomHandlers = {};
 const MixedTypeHandlers = {
     "String": (data) => 'String(' + stringify(String(data)) + ')',
     "Boolean": (data) => "Boolean(" + String(data) + ")",
@@ -25,13 +24,13 @@ function getType(data) {
         let type = typeof data, Type = upperFirst(type), isObj = type == "object";
         for (let x in types_1.MixedTypes) {
             if (isObj && data.constructor.name === x) {
-                return types_1.MixedTypes[x];
+                return x;
             }
             else if (!isObj && x === Type) {
                 return type;
             }
         }
-        return type == "object" ? types_1.MixedTypes.Object : type;
+        return type == "object" ? types_1.MixedTypes.Object.name : type;
     }
 }
 function getValues(data) {
@@ -133,9 +132,15 @@ function getHandler(type, indent, originalIndent, path, refMap) {
     if (handlers[type]) {
         return handlers[type];
     }
-    else if (CustomHandlers[type]) {
+    else if (types_1.MixedTypes[type]) {
         return (data) => {
-            data = CustomHandlers[type].apply(data);
+            let handler = types_1.MixedTypes[type].prototype.toFRON;
+            if (handler) {
+                data = handler.apply(data);
+            }
+            else {
+                data = Object.assign({}, data);
+            }
             return type + "("
                 + stringifyCommon(data, indent, originalIndent, path, refMap)
                 + ")";
@@ -150,8 +155,4 @@ function stringify(data, pretty) {
     return stringifyCommon(data, indent, indent, "", new Map());
 }
 exports.stringify = stringify;
-function registerToFron(type, toFRON) {
-    CustomHandlers[type] = toFRON;
-}
-exports.registerToFron = registerToFron;
 //# sourceMappingURL=stringify.js.map

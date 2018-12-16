@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-require("source-map-support/register");
 const types_1 = require("./types");
 const literal_toolkit_1 = require("literal-toolkit");
 const last = require("lodash/last");
@@ -11,8 +10,6 @@ const set = require("lodash/set");
 const path = require("path");
 const IsVar = /^[a-z_][a-z0-9_]*$/i;
 const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
-const TypeMap = {};
-const CustomHandlers = {};
 const MixedTypeHandlers = {
     "String": (data) => new String(data),
     "Number": (data) => new Number(data),
@@ -37,18 +34,20 @@ types_1.ExtendedErrors.forEach(error => {
     MixedTypeHandlers[error.name] = MixedTypeHandlers["Error"];
 });
 function throwSyntaxError(token) {
-    let filename = token.filename ? path.resolve(token.filename) : "<anonymous>", type = token.type ? token.type + " token" : "token";
-    throw new SyntaxError(`Unexpected ${type} in ${filename}:${token.line}:${token.column}`);
+    let filename = token.filename ? path.resolve(token.filename) : "<anonymous>", type = token.type ? token.type + " token" : "token", { line, column } = token;
+    throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
 }
 function getHandler(type) {
-    return MixedTypeHandlers[type] || CustomHandlers[type];
+    return MixedTypeHandlers[type] || (types_1.MixedTypes[type]
+        ? types_1.MixedTypes[type].prototype.fromFRON
+        : undefined);
 }
 function getInstance(type) {
-    return TypeMap[type] ? Object.create(TypeMap[type].prototype) : undefined;
+    return types_1.MixedTypes[type] ? Object.create(types_1.MixedTypes[type].prototype) : undefined;
 }
 function setTokenData(token, value) {
     if (token.parent) {
-        if (token.parent.type === types_1.MixedTypes.Object) {
+        if (token.parent.type === "Object") {
             if (!token.property) {
                 let path = token.parent.path || "", isVar = IsVar.test(value), prop = isVar ? `${value}` : `['${value}']`;
                 token.data[value] = undefined;
@@ -60,7 +59,7 @@ function setTokenData(token, value) {
                 token.property = "";
             }
         }
-        else if (token.parent.type === types_1.MixedTypes.Array) {
+        else if (token.parent.type === "Array") {
             token.data.push(value);
             token.path = (token.parent.path || "") + `[${token.data.length}]`;
         }
@@ -69,8 +68,6 @@ function setTokenData(token, value) {
         }
         else {
             let handle = getHandler(token.parent.type), inst = getInstance(token.parent.type);
-            if (inst)
-                console.log(inst, handle);
             if (handle) {
                 token.data = handle.call(inst || value, value);
             }
@@ -87,7 +84,7 @@ function setTokenData(token, value) {
 function parseToken(str, token) {
     let char;
     loop: while ((char = str[token.cursor])) {
-        if ((char == false && char !== "0" && char !== "\n")) {
+        if (char == false && char !== "0" && char !== "\n") {
             token.column++;
             token.cursor++;
             continue;
@@ -147,7 +144,7 @@ function parseToken(str, token) {
                 let isArray = char === "[";
                 token.column++;
                 token.cursor++;
-                token.type = isArray ? types_1.MixedTypes.Array : types_1.MixedTypes.Object;
+                token.type = isArray ? "Array" : "Object";
                 innerToken = parseToken(str, Object.assign({
                     data: isArray ? [] : {},
                     path: isArray ? (token.path || "") + "[0]" : "",
@@ -265,12 +262,7 @@ function parseToken(str, token) {
                             else {
                                 token.column += matches[0].length - 1;
                             }
-                            if (types_1.MixedTypes[matches[1]]) {
-                                token.type = types_1.MixedTypes[matches[1]];
-                            }
-                            else {
-                                token.type = matches[1];
-                            }
+                            token.type = matches[1];
                         }
                     }
                     else {
@@ -303,15 +295,4 @@ function parse(str, filename) {
     return data;
 }
 exports.parse = parse;
-function registerFromFron(type, fromFRON) {
-    CustomHandlers[type] = fromFRON;
-}
-exports.registerFromFron = registerFromFron;
-function registerConstructr(type) {
-    if (typeof type.prototype.fromFRON !== "function") {
-        throw new TypeError("The prototype must inlcude a fromFRON method");
-    }
-    TypeMap[type.name] = type;
-}
-exports.registerConstructr = registerConstructr;
 //# sourceMappingURL=parse.js.map

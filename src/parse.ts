@@ -1,4 +1,3 @@
-import "source-map-support/register";
 import { MixedTypes, ExtendedErrors } from "./types";
 import { LiteralToken, string, number, regexp, comment, keyword } from 'literal-toolkit';
 import last = require("lodash/last");
@@ -23,8 +22,6 @@ interface MetaToken {
 
 const IsVar = /^[a-z_][a-z0-9_]*$/i;
 const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
-const TypeMap: { [x: string]: Function } = {};
-const CustomHandlers: { [x: string]: (data: any) => any } = {};
 const MixedTypeHandlers = {
     "String": (data: string) => new String(data),
     "Number": (data: number) => new Number(data),
@@ -52,21 +49,25 @@ ExtendedErrors.forEach(error => {
 
 function throwSyntaxError(token: MetaToken) {
     let filename = token.filename ? path.resolve(token.filename) : "<anonymous>",
-        type = token.type ? token.type + " token" : "token";
-    throw new SyntaxError(`Unexpected ${type} in ${filename}:${token.line}:${token.column}`);
+        type = token.type ? token.type + " token" : "token",
+        { line, column } = token;
+    throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
 }
 
 function getHandler(type: string): (data: any) => any {
-    return MixedTypeHandlers[type] || CustomHandlers[type];
+    return MixedTypeHandlers[type] || (MixedTypes[type]
+        ? MixedTypes[type].prototype.fromFRON
+        : undefined
+    );
 }
 
 function getInstance(type: string): any {
-    return TypeMap[type] ? Object.create(TypeMap[type].prototype) : undefined;
+    return MixedTypes[type] ? Object.create(MixedTypes[type].prototype) : undefined;
 }
 
 function setTokenData(token: MetaToken, value) {
     if (token.parent) {
-        if (token.parent.type === MixedTypes.Object) {
+        if (token.parent.type === "Object") {
             if (!token.property) {
                 let path = token.parent.path || "",
                     isVar = IsVar.test(value),
@@ -81,7 +82,7 @@ function setTokenData(token: MetaToken, value) {
                 token.data[token.property] = value;
                 token.property = ""; // reset property
             }
-        } else if (token.parent.type === MixedTypes.Array) { // array
+        } else if (token.parent.type === "Array") { // array
             token.data.push(value);
 
             // increase the path in the array.
@@ -91,8 +92,6 @@ function setTokenData(token: MetaToken, value) {
         } else {
             let handle = getHandler(token.parent.type),
                 inst = getInstance(token.parent.type);
-
-            if (inst) console.log(inst, handle);
 
             if (handle) {
                 token.data = handle.call(inst || value, value);
@@ -112,7 +111,7 @@ function parseToken(str: string, token: MetaToken): MetaToken {
 
     loop:
     while ((char = str[token.cursor])) {
-        if ((<any>char == false && char !== "0" && char !== "\n")) {
+        if (<any>char == false && char !== "0" && char !== "\n") {
             token.column++;
             token.cursor++;
             continue;
@@ -185,7 +184,7 @@ function parseToken(str: string, token: MetaToken): MetaToken {
 
                 token.column++;
                 token.cursor++;
-                token.type = isArray ? MixedTypes.Array : MixedTypes.Object;
+                token.type = isArray ? "Array" : "Object";
                 innerToken = parseToken(str, Object.assign({
                     data: isArray ? [] : {},
                     path: isArray ? (token.path || "") + "[0]" : "",
@@ -255,7 +254,8 @@ function parseToken(str: string, token: MetaToken): MetaToken {
                 }
                 break;
 
-            // octal number or hexadecimal number, or decimal number starts with `.`.
+            // octal number or hexadecimal number, or decimal number starts with
+            // `.`.
             case "0":
             case ".":
                 token.type = "number";
@@ -310,11 +310,7 @@ function parseToken(str: string, token: MetaToken): MetaToken {
                                 token.column += matches[0].length - 1;
                             }
 
-                            if (MixedTypes[matches[1]]) {
-                                token.type = MixedTypes[matches[1]];
-                            } else {
-                                token.type = matches[1];
-                            }
+                            token.type = matches[1];
                         }
                     } else {
                         if (isFinite(Number(char))) {
@@ -348,16 +344,4 @@ export function parse(str: string, filename?: string): any {
     }
 
     return data;
-}
-
-export function registerFromFron(type: string, fromFRON: (data: any) => any) {
-    CustomHandlers[type] = fromFRON;
-}
-
-export function registerConstructr(type: Function) {
-    if (typeof type.prototype.fromFRON !== "function") {
-        throw new TypeError("The prototype must inlcude a fromFRON method");
-    }
-
-    TypeMap[type.name] = type;
 }

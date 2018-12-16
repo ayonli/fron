@@ -38,6 +38,7 @@
   "dependencies": {
     "literal-toolkit": "^1.0.1",
     "lodash": "^4.17.11",
-    "safe-string-literal": "^1.0.1"
+    "safe-string-literal": "^1.0.1",
+    "tslib": "^1.9.3"
   }
 }
