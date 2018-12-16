@@ -6,56 +6,86 @@ const literal_toolkit_1 = require("literal-toolkit");
 const last = require("lodash/last");
 const pick = require("lodash/pick");
 const omit = require("lodash/omit");
-const assert_1 = require("assert");
+const get = require("lodash/get");
+const set = require("lodash/set");
 const path = require("path");
+const IsVar = /^[a-z_][a-z0-9_]*$/i;
 const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
-function throwSyntaxError(token) {
-    let filename = token.filename ? path.resolve(token.filename) : "<anonymous>", type = token.type ? token.type + " " : "";
-    throw new SyntaxError(`Unexpected ${type}token in ${filename}:${token.line}:${token.column}`);
-}
-var tokenSample = {
-    filename: "<anonymous>",
-    line: 1,
-    column: 1,
-    cursor: 0,
-    type: ""
+const TypeMap = {};
+const CustomHandlers = {};
+const MixedTypeHandlers = {
+    "String": (data) => new String(data),
+    "Number": (data) => new Number(data),
+    "Boolean": (data) => new Boolean(data),
+    "Date": (data) => new Date(data),
+    "Buffer": (data) => Buffer.from(data),
+    "Map": (data) => new Map(data),
+    "Set": (data) => new Set(data),
+    "Symbol": (data) => Symbol.for(data),
+    "Error": (data) => {
+        let err = Object.create((types_1.ExtendedErrors[data.name] || Error).prototype);
+        Object.defineProperties(err, {
+            name: { value: data.name },
+            message: { value: data.message },
+            stack: { value: data.stack }
+        });
+        Object.assign(err, omit(data, ["name", "message", "stack"]));
+        return err;
+    }
 };
-function parseToken(str, token) {
-    let char, lastProp = "", setTokenData = (token, value) => {
-        if (token.parent) {
-            if (token.parent.type === types_1.ObjectTypes.Object) {
-                if (!token.data)
-                    token.data = {};
-                if (!lastProp) {
-                    lastProp = value;
-                    token.data[value] = undefined;
-                }
-                else {
-                    token.data[lastProp] = value;
-                    lastProp = "";
-                }
-            }
-            else if (token.parent.type === types_1.ObjectTypes.Array) {
-                if (!token.data)
-                    token.data = [];
-                token.data.push(value);
+types_1.ExtendedErrors.forEach(error => {
+    MixedTypeHandlers[error.name] = MixedTypeHandlers["Error"];
+});
+function throwSyntaxError(token) {
+    let filename = token.filename ? path.resolve(token.filename) : "<anonymous>", type = token.type ? token.type + " token" : "token";
+    throw new SyntaxError(`Unexpected ${type} in ${filename}:${token.line}:${token.column}`);
+}
+function getHandler(type) {
+    return MixedTypeHandlers[type] || CustomHandlers[type];
+}
+function getInstance(type) {
+    return TypeMap[type] ? Object.create(TypeMap[type].prototype) : undefined;
+}
+function setTokenData(token, value) {
+    if (token.parent) {
+        if (token.parent.type === types_1.MixedTypes.Object) {
+            if (!token.property) {
+                let path = token.parent.path || "", isVar = IsVar.test(value), prop = isVar ? `${value}` : `['${value}']`;
+                token.data[value] = undefined;
+                token.property = value;
+                token.path = path + (isVar && path ? "." : "") + prop;
             }
             else {
-                let handle = getHandler(token.parent.type);
-                if (handle) {
-                    token.data = handle(value);
-                }
-                else {
-                    token.data = value;
-                }
+                token.data[token.property] = value;
+                token.property = "";
             }
-            token.type = "";
+        }
+        else if (token.parent.type === types_1.MixedTypes.Array) {
+            token.data.push(value);
+            token.path = (token.parent.path || "") + `[${token.data.length}]`;
+        }
+        else if (token.parent.type === "Reference") {
+            token.refMap[token.path] = value;
         }
         else {
-            token.data = value;
-            token.type = "";
+            let handle = getHandler(token.parent.type), inst = getInstance(token.parent.type);
+            if (inst)
+                console.log(inst, handle);
+            if (handle) {
+                token.data = handle.call(inst || value, value);
+            }
+            else {
+                token.data = value;
+            }
         }
-    };
+    }
+    else {
+        token.data = value;
+    }
+    token.type = "";
+}
+function parseToken(str, token) {
+    let char;
     loop: while ((char = str[token.cursor])) {
         if ((char == false && char !== "0" && char !== "\n")) {
             token.column++;
@@ -70,7 +100,7 @@ function parseToken(str, token) {
                 token.column = 1;
                 break;
             case ",":
-                if (token.parent && !lastProp) {
+                if (token.parent && !token.property) {
                     token.column++;
                     token.cursor++;
                 }
@@ -79,7 +109,7 @@ function parseToken(str, token) {
                 }
                 break;
             case ":":
-                if (token.parent && lastProp) {
+                if (token.parent && token.property) {
                     token.column++;
                     token.cursor++;
                 }
@@ -90,18 +120,20 @@ function parseToken(str, token) {
             case "(":
                 token.column++;
                 token.cursor++;
-                remains = str.slice(token.cursor);
-                innerToken = parseToken(remains, Object.assign({
+                innerToken = parseToken(str, Object.assign({
                     parent: token
-                }, tokenSample, pick(token, [
+                }, pick(token, [
                     "filename",
                     "line",
                     "column",
-                    "type"
+                    "cursor",
+                    "refMap",
+                    "path",
+                    "type",
                 ])));
                 token.line = innerToken.line;
                 token.column = innerToken.column;
-                token.cursor += innerToken.cursor;
+                token.cursor = innerToken.cursor;
                 setTokenData(token, innerToken.data);
                 break;
             case ")":
@@ -115,18 +147,24 @@ function parseToken(str, token) {
                 let isArray = char === "[";
                 token.column++;
                 token.cursor++;
-                token.type = isArray ? types_1.ObjectTypes.Array : types_1.ObjectTypes.Object;
-                remains = str.slice(token.cursor);
-                innerToken = parseToken(remains, Object.assign({
+                token.type = isArray ? types_1.MixedTypes.Array : types_1.MixedTypes.Object;
+                innerToken = parseToken(str, Object.assign({
                     data: isArray ? [] : {},
+                    path: isArray ? (token.path || "") + "[0]" : "",
                     parent: token
-                }, tokenSample, pick(token, ["filename", "line", "column"])));
+                }, pick(token, [
+                    "filename",
+                    "line",
+                    "column",
+                    "cursor",
+                    "refMap"
+                ])));
                 token.line = innerToken.line;
                 token.column = innerToken.column;
-                token.cursor += innerToken.cursor;
+                token.cursor = innerToken.cursor;
                 setTokenData(token, innerToken.data);
                 break;
-            case "`":
+            case "'":
             case '"':
             case "`":
                 token.type = "string";
@@ -206,7 +244,7 @@ function parseToken(str, token) {
                         token.line += lines.length - 1;
                         token.cursor += matches[0].length - 1;
                         if (last(matches[0]) === ":") {
-                            if (!lastProp) {
+                            if (!token.property) {
                                 if (lines.length > 1) {
                                     token.column = last(lines).length - 1;
                                 }
@@ -227,8 +265,8 @@ function parseToken(str, token) {
                             else {
                                 token.column += matches[0].length - 1;
                             }
-                            if (types_1.ObjectTypes[matches[1]]) {
-                                token.type = types_1.ObjectTypes[matches[1]];
+                            if (types_1.MixedTypes[matches[1]]) {
+                                token.type = types_1.MixedTypes[matches[1]];
                             }
                             else {
                                 token.type = matches[1];
@@ -248,43 +286,32 @@ function parseToken(str, token) {
     return token;
 }
 function parse(str, filename) {
-    return parseToken(str, Object.assign({}, tokenSample, { filename })).data;
+    let token = parseToken(str, {
+        filename,
+        line: 1,
+        column: 1,
+        cursor: 0,
+        path: "",
+        refMap: {}
+    });
+    let data = token.data;
+    for (let path in token.refMap) {
+        let target = token.refMap[path];
+        let ref = target ? get(data, target) : data;
+        set(data, path, ref);
+    }
+    return data;
 }
 exports.parse = parse;
-const Errors = [
-    assert_1.AssertionError,
-    Error,
-    EvalError,
-    RangeError,
-    ReferenceError,
-    SyntaxError,
-    TypeError
-];
-function getHandler(type) {
-    let handlers = {
-        "String": (data) => new String(data),
-        "Number": (data) => new Number(data),
-        "Boolean": (data) => new Boolean(data),
-        "Date": (data) => new Date(data),
-        "Buffer": (data) => Buffer.from(data),
-        "Map": (data) => new Map(data),
-        "Set": (data) => new Set(data),
-        "Symbol": (data) => Symbol.for(data),
-        "Error": (data) => {
-            let err = Object.create((Errors[data.name] || Error).prototype);
-            Object.defineProperties(err, {
-                name: { value: data.name },
-                message: { value: data.message },
-                stack: { value: data.stack }
-            });
-            Object.assign(err, omit(data, ["name", "message", "stack"]));
-            return err;
-        }
-    };
-    for (let type of Errors) {
-        if (type.name !== "Error")
-            handlers[type.name] = handlers["Error"];
-    }
-    return handlers[type];
+function registerFromFron(type, fromFRON) {
+    CustomHandlers[type] = fromFRON;
 }
+exports.registerFromFron = registerFromFron;
+function registerConstructr(type) {
+    if (typeof type.prototype.fromFRON !== "function") {
+        throw new TypeError("The prototype must inlcude a fromFRON method");
+    }
+    TypeMap[type.name] = type;
+}
+exports.registerConstructr = registerConstructr;
 //# sourceMappingURL=parse.js.map

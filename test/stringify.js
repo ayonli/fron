@@ -1,22 +1,10 @@
-const { stringify } = require("../dist/stringify");
-const { register } = require("../dist/index");
+const { User } = require("./common");
+const { stringify } = require("..");
 const fs = require("fs");
-
-class User {
-    constructor(name, age) {
-        this.name = name;
-        this.age = age;
-    }
-
-    toFRON() {
-        return Object.assign({}, this);
-    }
-}
-
-register(User);
 
 var data = {
     "hello world!": "Hello,\tWorld!",
+    12: 12,
     hi: ["Hello, World!", "Hi, FRON"],
     date: new Date(),
     re: new RegExp("\\\\[a-z]", 'i'),

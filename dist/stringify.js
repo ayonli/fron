@@ -2,20 +2,38 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const types_1 = require("./types");
 const literal_toolkit_1 = require("literal-toolkit");
-const assert_1 = require("assert");
-function stringify(data, pretty) {
-    let indent = "";
-    if (pretty) {
-        indent = typeof pretty == "string" ? pretty : "  ";
+const pick = require("lodash/pick");
+const omit = require("lodash/omit");
+const upperFirst = require("lodash/upperFirst");
+const IsVar = /^[a-z_][a-z0-9_]*$/i;
+const CustomHandlers = {};
+const MixedTypeHandlers = {
+    "String": (data) => 'String(' + stringify(String(data)) + ')',
+    "Boolean": (data) => "Boolean(" + String(data) + ")",
+    "Number": (data) => "Number(" + String(data) + ")",
+    "Date": (data) => "Date(" + stringify(data.toISOString()) + ")",
+    "RegExp": (data) => String(data),
+};
+function getType(data) {
+    if (data === undefined) {
+        return;
     }
-    return stringifyCommon(data, indent, indent, "", new Map());
+    else if (data === null) {
+        return "null";
+    }
+    else {
+        let type = typeof data, Type = upperFirst(type), isObj = type == "object";
+        for (let x in types_1.MixedTypes) {
+            if (isObj && data.constructor.name === x) {
+                return types_1.MixedTypes[x];
+            }
+            else if (!isObj && x === Type) {
+                return type;
+            }
+        }
+        return type == "object" ? types_1.MixedTypes.Object : type;
+    }
 }
-exports.stringify = stringify;
-exports.CustomHandlers = {};
-function registerToFron(type, toFRON) {
-    exports.CustomHandlers[type] = toFRON;
-}
-exports.registerToFron = registerToFron;
 function getValues(data) {
     let arr = [];
     for (let item of data) {
@@ -24,7 +42,7 @@ function getValues(data) {
     return arr;
 }
 function stringifyCommon(data, indent, originalIndent, path, refMap) {
-    let type = types_1.getType(data);
+    let type = getType(data);
     if (!type || type == "function") {
         return;
     }
@@ -38,7 +56,7 @@ function stringifyCommon(data, indent, originalIndent, path, refMap) {
         let key = Symbol.keyFor(data);
         return key === undefined ? void 0 : "Symbol(" + stringify(key) + ")";
     }
-    else if ((types_1.isObjectType(type))) {
+    else if (types_1.isMixed(type)) {
         if (refMap.has(data)) {
             return "Reference(" + stringify(refMap.get(data)) + ")";
         }
@@ -61,49 +79,27 @@ function stringifyIterable(type, data, indent, originalIndent, path, refMap) {
     return stringifyMixed(type, data, indent, originalIndent, path, refMap);
 }
 function getHandler(type, indent, originalIndent, path, refMap) {
-    var handlers = {
-        "String": (data) => 'String(' + stringify(String(data)) + ')',
-        "Boolean": (data) => "Boolean(" + String(data) + ")",
-        "Number": (data) => "Number(" + String(data) + ")",
-        "Date": (data) => "Date(" + stringify(data.toISOString()) + ")",
-        "RegExp": (data) => String(data),
-        "Buffer": (data) => {
-            return stringifyIterable("Buffer", data, indent, originalIndent, path, refMap);
-        },
-        "Map": (data) => {
-            return stringifyIterable("Map", data, indent, originalIndent, path, refMap);
-        },
+    var handlers = Object.assign({}, MixedTypeHandlers, {
         "Set": (data) => {
-            return stringifyIterable("Set", data, indent, originalIndent, path, refMap);
+            return stringifyIterable(type, data, indent, originalIndent, path, refMap);
         },
         "Error": (data) => {
-            let res = {
-                name: data.name,
-                message: data.message,
-                stack: data.stack
-            };
-            for (let x in data) {
-                if (x !== "name" && x !== "message" && x !== "stack") {
-                    res[x] = data[x];
-                }
-            }
+            let reserved = ["name", "message", "stack"], res = Object.assign(pick(data, reserved), omit(data, reserved));
             return stringifyMixed(type, res, indent, originalIndent, path, refMap);
         },
         "Object": (data) => {
-            let isVar = /^[a-z_][a-z0-9_]*$/i, container = [];
+            let container = [];
             if (typeof data.toFRON == "function") {
                 data = data.toFRON();
             }
             for (let x in data) {
-                let _isVar = isVar.test(x);
-                let _path = path ? path + (_isVar ? `.${x}` : `['${x}']`) : x;
-                let res = stringifyCommon(data[x], indent + originalIndent, originalIndent, _path, refMap);
+                let isVar = IsVar.test(x), prop = isVar ? x : `['${x}']`, res = stringifyCommon(data[x], indent + originalIndent, originalIndent, path + (isVar && path ? "." : "") + prop, refMap);
                 if (res !== undefined) {
                     if (indent) {
-                        container.push((_isVar ? x : stringify(x)) + `: ${res}`);
+                        container.push((isVar ? x : stringify(x)) + `: ${res}`);
                     }
                     else {
-                        container.push((_isVar ? x : stringify(x)) + `:${res}`);
+                        container.push((isVar ? x : stringify(x)) + `:${res}`);
                     }
                 }
             }
@@ -131,28 +127,31 @@ function getHandler(type, indent, originalIndent, path, refMap) {
                 return "[" + container.join(",") + "]";
             }
         },
-    };
-    var Errors = [
-        assert_1.AssertionError,
-        EvalError,
-        RangeError,
-        ReferenceError,
-        SyntaxError,
-        TypeError
-    ];
-    for (let type of Errors) {
-        handlers[type.name] = handlers["Error"];
-    }
+    });
+    handlers["Buffer"] = handlers["Map"] = handlers["Set"];
+    types_1.ExtendedErrors.forEach(error => handlers[error.name] = handlers["Error"]);
     if (handlers[type]) {
         return handlers[type];
     }
-    else if (exports.CustomHandlers[type]) {
+    else if (CustomHandlers[type]) {
         return (data) => {
-            data = exports.CustomHandlers[type].apply(data);
+            data = CustomHandlers[type].apply(data);
             return type + "("
                 + stringifyCommon(data, indent, originalIndent, path, refMap)
                 + ")";
         };
     }
 }
+function stringify(data, pretty) {
+    let indent = "";
+    if (pretty) {
+        indent = typeof pretty == "string" ? pretty : "  ";
+    }
+    return stringifyCommon(data, indent, indent, "", new Map());
+}
+exports.stringify = stringify;
+function registerToFron(type, toFRON) {
+    CustomHandlers[type] = toFRON;
+}
+exports.registerToFron = registerToFron;
 //# sourceMappingURL=stringify.js.map
