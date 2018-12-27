@@ -31,12 +31,12 @@
   "homepage": "https://github.com/hyurl/fron#readme",
   "devDependencies": {
     "@types/lodash": "^4.14.119",
-    "@types/node": "^10.12.15",
+    "@types/node": "^10.12.18",
     "mocha": "^5.2.0",
     "source-map-support": "^0.5.9"
   },
   "dependencies": {
-    "literal-toolkit": "^1.0.1",
+    "literal-toolkit": "^1.1.0",
     "lodash": "^4.17.11",
     "safe-string-literal": "^1.0.1",
     "tslib": "^1.9.3"

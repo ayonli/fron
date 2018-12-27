@@ -7,6 +7,22 @@ import get = require("lodash/get");
 import set = require("lodash/set");
 import * as path from "path";
 
+export interface SourceToken {
+    filename: string;
+    start: {
+        line: number,
+        column: number
+    };
+    end: {
+        line: number,
+        column: number
+    };
+    type: string;
+    data: any;
+    parent: MetaToken;
+    path?: string;
+}
+
 interface MetaToken {
     filename?: string;
     line: number;
@@ -31,14 +47,17 @@ const MixedTypeHandlers = {
     "Map": (data: [any, any][]) => new Map(data),
     "Set": (data: any[]) => new Set(data),
     "Symbol": (data: string) => Symbol.for(data),
-    "Error": (data: Error & { [x: string]: any }) => {
-        let err = Object.create((ExtendedErrors[data.name] || Error).prototype);
+    "Error": (data: { [x: string]: any }) => {
+        let ctor: new (...args) => Error = ExtendedErrors[data.name] || Error,
+            err: Error = Object.create(ctor.prototype);
+
         Object.defineProperties(err, {
             name: { value: data.name },
             message: { value: data.message },
             stack: { value: data.stack }
         });
         Object.assign(err, omit(data, ["name", "message", "stack"]));
+
         return err;
     }
 };
