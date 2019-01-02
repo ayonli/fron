@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-require("source-map-support/register");
 const types_1 = require("./types");
 exports.register = types_1.register;
 const stringify_1 = require("./stringify");

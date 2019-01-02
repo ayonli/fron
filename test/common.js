@@ -1,3 +1,4 @@
+require("source-map-support/register");
 const { register } = require("../dist/index");
 
 class User {

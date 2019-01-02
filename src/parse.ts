@@ -5,11 +5,11 @@ import pick = require("lodash/pick");
 import omit = require("lodash/omit");
 import get = require("lodash/get");
 import set = require("lodash/set");
-import cloneDeep = require("lodash/cloneDeep");
+// import cloneDeep = require("lodash/cloneDeep");
 import * as path from "path";
 
 export interface SourceToken {
-    filename: string;
+    filename?: string;
     position: {
         start: {
             line: number,
@@ -37,6 +37,7 @@ interface CursorToken {
     index: number;
     line: number;
     column: number;
+    filename?: string;
 }
 
 const IsVar = /^[a-z_][a-z0-9_]*$/i;
@@ -87,7 +88,7 @@ function getInstance(type: string): any {
     return MixedTypes[type] ? Object.create(MixedTypes[type].prototype) : undefined;
 }
 
-function setTokenData(token: SourceToken, value, cursor: CursorToken) {
+function setTokenData(token: SourceToken, value, cursor: CursorToken): number {
     token.position.end = pick(cursor, ["line", "column"]);
 
     if (token.parent) { // mixed types
@@ -95,21 +96,19 @@ function setTokenData(token: SourceToken, value, cursor: CursorToken) {
             let prop = IsVar.test(value) ? (token.path ? "." : "") + `${value}` : `['${value}']`;
 
             token.path = (token.parent.path || "") + prop;
+            token.type = "property";
             token.parent.data[value] = token;
-            (<SourceToken>token.parent.data[value]).data = doParseToken(cursor.source, new SourceToken({
-                filename: token.filename,
-                position: cloneDeep(token.position),
-                type: token.type,
-                data: undefined,
-                parent: token,
-                path: token.path
-            }), cursor);
-            (<SourceToken>token.parent.data[value].data).position.end = pick(cursor, ["line", "column"]);
+            token.data = doParseToken(cursor.source, token, cursor);
+            (<SourceToken>token.data).position.end = pick(cursor, ["line", "column"]);
         } else if (token.parent.type === "Array") { // array
-            token.path = (token.parent.path || "") + `[${token.data.length}]`;
+            token.path = (token.parent.path || "") + `[${token.parent.data.length}]`;
+            token.data = value;
             token.parent.data.push(token);
         } else if (token.parent.type === "property") {
+            token.data = value;
             token.parent.data = token;
+
+            return 1;
         } else {
             let handle = getHandler(token.parent.type),
                 inst = getInstance(token.parent.type);
@@ -118,44 +117,66 @@ function setTokenData(token: SourceToken, value, cursor: CursorToken) {
         }
     } else { // primitive types
         token.data = value;
+        return 1;
     }
+
+    return 0;
 }
 
-function doParseToken(str: string, token: SourceToken, cursor: CursorToken): SourceToken {
+function doParseToken(str: string, parent: SourceToken, cursor: CursorToken): SourceToken {
     let char: string;
+    let token: SourceToken;
+    let lastToken: SourceToken = null;
 
     loop:
     while ((char = str[cursor.index])) {
-        if (<any>char == false && char !== "0" && char !== "\n") {
-            cursor.column++;
+        if (<any>char == false && char !== "0") {
             cursor.index++;
+
+            if (char === "\n") {
+                cursor.line++;
+                cursor.column = 1;
+            } else {
+                cursor.column++;
+            }
+
             continue;
         }
 
         let remains: string,
-            innerToken: SourceToken,
             dataToken: LiteralToken & { value: any, type?: string };
 
-        switch (char) {
-            case "\n":
-                cursor.index++;
-                cursor.line++;
-                cursor.column = 1;
-                break;
+        token = lastToken || {
+            filename: cursor.filename || "<anonymous>",
+            position: {
+                start: pick(cursor, ["line", "column"]),
+                end: undefined
+            },
+            type: undefined,
+            data: undefined,
+        };
 
+        if (parent) token.parent = parent;
+
+        switch (char) {
             case ",":
-                if (token.parent && ["Object", "Array"].includes(token.parent.type)) {
+                if (parent && ["Object", "Array", "property"].includes(parent.type)) {
                     cursor.index++;
                     cursor.column++;
+
+                    if (parent.type === "property") {
+                        break loop;
+                    }
                 } else {
                     throwSyntaxError(token);
                 }
                 break;
 
             case ":":
-                if (token.parent && token.parent.type === "property") {
+                if (parent && parent.type === "property") {
                     cursor.index++;
                     cursor.column++;
+                    lastToken = null;
                 } else {
                     throwSyntaxError(token);
                 }
@@ -165,20 +186,12 @@ function doParseToken(str: string, token: SourceToken, cursor: CursorToken): Sou
             case "(":
                 cursor.index++;
                 cursor.column++;
-                token.position.start = pick(cursor, ["line", "column"]);
-                innerToken = doParseToken(str, new SourceToken({
-                    filename: token.filename,
-                    position: cloneDeep(token.position),
-                    type: token.type,
-                    data: undefined,
-                    parent: token,
-                    path: token.path
-                }), cursor);
+                token.data = doParseToken(str, token, cursor);
                 token.position.end = {
                     line: cursor.line,
                     column: cursor.column + 1 // include the closing brace ")"
                 };
-                token.data = innerToken;
+                lastToken = null;
                 break;
 
             case ")":
@@ -196,20 +209,11 @@ function doParseToken(str: string, token: SourceToken, cursor: CursorToken): Sou
                 cursor.index++;
                 cursor.column++;
                 token.type = isArray ? "Array" : "Object";
-                token.position.start = pick(cursor, ["line", "column"]);
-                innerToken = doParseToken(str, new SourceToken({
-                    filename: token.filename,
-                    position: cloneDeep(token.position),
-                    type: token.type,
-                    data: undefined,
-                    parent: token,
-                    path: token.path
-                }), cursor);
-                token.position.end = {
-                    line: cursor.line,
-                    column: cursor.column + 1 // include the closing brace "}" or "]"
-                };
-                token.data = innerToken;
+                token.data = isArray ? [] : {};
+
+                doParseToken(str, token, cursor);
+
+                token.position.end = pick(cursor, ["line", "column"]);
                 break;
 
             // string
@@ -217,10 +221,8 @@ function doParseToken(str: string, token: SourceToken, cursor: CursorToken): Sou
             case '"':
             case "`":
                 token.type = "string";
-                token.position.start = pick(cursor, ["line", "column"]);
-                dataToken = string.parseToken(str.slice(cursor.index));
 
-                if (dataToken) {
+                if ((dataToken = string.parseToken(str.slice(cursor.index)))) {
                     let lines = dataToken.source.split("\n");
 
                     cursor.index += dataToken.length;
@@ -236,23 +238,30 @@ function doParseToken(str: string, token: SourceToken, cursor: CursorToken): Sou
                         line: cursor.line,
                         column: cursor.column + 1 // include the closing quote
                     };
-                    setTokenData(token, dataToken.value, cursor);
+
+                    if (setTokenData(token, dataToken.value, cursor)) {
+                        break loop;
+                    } else {
+                        break;
+                    }
                 } else {
                     throwSyntaxError(token);
                 }
-                break;
 
             // regular expression or comment
             case "/":
                 token.type = "regexp";
-                token.position.start = pick(cursor, ["line", "column"]);
                 remains = str.slice(cursor.index);
 
                 if ((dataToken = regexp.parseToken(remains))) {
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
-                    token.position.end = pick(cursor, ["line", "column"]);
-                    setTokenData(token, dataToken.value, cursor);
+
+                    if (setTokenData(token, dataToken.value, cursor)) {
+                        break loop;
+                    } else {
+                        break;
+                    }
                 } else if ((dataToken = comment.parseToken(remains))) {
                     token.type = "comment";
                     cursor.index += dataToken.length;
@@ -268,46 +277,57 @@ function doParseToken(str: string, token: SourceToken, cursor: CursorToken): Sou
                         }
                     }
 
-                    token.position.end = pick(cursor, ["line", "column"]);
-                    setTokenData(token, dataToken.value, cursor);
+                    if (setTokenData(token, dataToken.value, cursor)) {
+                        break loop;
+                    } else {
+                        break;
+                    }
                 } else {
                     throwSyntaxError(token);
                 }
-                break;
 
             // binary, octal or hexadecimal number, or decimal number starts 
             // with `.`.
             case "0":
             case ".":
                 token.type = "number";
-                token.position.start = pick(cursor, ["line", "column"]);
 
                 if ((dataToken = number.parseToken(str.slice(cursor.index)))) {
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
-                    token.position.end = pick(cursor, ["line", "column"]);
-                    setTokenData(token, dataToken.value, cursor);
+
+                    if (setTokenData(token, dataToken.value, cursor)) {
+                        break loop;
+                    } else {
+                        break;
+                    }
                 } else {
                     throwSyntaxError(token);
                 }
-                break;
 
             default:
                 remains = str.slice(cursor.index);
-                token.position.start = pick(cursor, ["line", "column"]);
 
                 if ((dataToken = number.parseToken(remains))) { // number
                     token.type = "number";
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
-                    token.position.end = pick(cursor, ["line", "column"]);
-                    setTokenData(token, dataToken.value, cursor);
+
+                    if (setTokenData(token, dataToken.value, cursor)) {
+                        break loop;
+                    } else {
+                        break;
+                    }
                 } else if ((dataToken = keyword.parseToken(remains))) { // keyword
                     token.type = "keyword";
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
-                    token.position.end = pick(cursor, ["line", "column"]);
-                    setTokenData(token, dataToken.value, cursor);
+
+                    if (setTokenData(token, dataToken.value, cursor)) {
+                        break loop;
+                    } else {
+                        break;
+                    }
                 } else {
                     let matches = remains.match(TypeOrPorp);
 
@@ -320,22 +340,28 @@ function doParseToken(str: string, token: SourceToken, cursor: CursorToken): Sou
 
                         if (last(matches[0]) === ":") { // property
                             token.type = "property";
+                            lastToken = token;
 
-                            if (token.parent.type === "Object") {
+                            if (parent && parent.type === "Object") {
                                 if (lines.length > 1) {
                                     cursor.column = last(lines).length - 1;
                                 } else {
                                     cursor.column += matches[0].length - 1;
                                 }
 
-                                setTokenData(token, key, cursor);
+                                if (setTokenData(token, key, cursor)) {
+                                    break loop;
+                                } else {
+                                    break;
+                                }
                             } else {
                                 throwSyntaxError(token);
                             }
                         } else {
                             token.type = key; // personalized type
+                            lastToken = token;
 
-                            if (token.type === "Reference" && !token.parent) {
+                            if (token.type === "Reference" && !parent) {
                                 throwSyntaxError(token);
                             }
 
@@ -346,9 +372,7 @@ function doParseToken(str: string, token: SourceToken, cursor: CursorToken): Sou
                             }
                         }
                     } else {
-                        if (isFinite(Number(char))) {
-                            token.type = "number";
-                        }
+                        isFinite(Number(char)) && (token.type = "number");
                         throwSyntaxError(token);
                     }
                 }
@@ -365,23 +389,10 @@ export function parseToken(str: string, filename?: string): SourceToken {
         index: 0,
         line: 1,
         column: 1,
+        filename
     };
-    
-    return doParseToken(str, new SourceToken({
-        filename,
-        position: {
-            start: {
-                line: 1,
-                column: 1
-            },
-            end: {
-                line: 1,
-                column: 1
-            }
-        },
-        type: undefined,
-        data: undefined
-    }), cursor);
+
+    return doParseToken(str, null, cursor);
 }
 
 export function parse(str: string, filename?: string): any {
@@ -389,7 +400,7 @@ export function parse(str: string, filename?: string): any {
         refMap = {},
         data = compose(token, refMap);
 
-    
+
 
     for (let path in refMap) {
         let target = refMap[path];
@@ -417,11 +428,11 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
                 data.push(compose(item, refMap));
             }
             break;
-        
+
         case "Reference":
             refMap[token.path] = token.data;
             break;
-        
+
         default:
             data = token.data;
             break;

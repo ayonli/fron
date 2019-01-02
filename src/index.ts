@@ -1,4 +1,3 @@
-import "source-map-support/register";
 import { register } from "./types";
 import { stringify } from "./stringify";
 import { parse } from "./parse";
