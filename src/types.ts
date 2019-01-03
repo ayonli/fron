@@ -1,5 +1,6 @@
 import { AssertionError } from "assert";
 
+export const Variable = /^[a-z_][a-z0-9_]*$/i;
 export const MixedTypes = {
     Array,
     Boolean,
@@ -22,12 +23,12 @@ export const ExtendedErrors = [
     TypeError
 ];
 
-type FRONHandlerPrototype = {
+export interface FRONEntry {
     toFRON: () => any,
     fromFRON: (data: any) => any
 };
 
-function checkProto(name: string, proto: FRONHandlerPrototype) {
+function checkProto(name: string, proto: FRONEntry) {
     if (typeof proto.fromFRON !== "function") {
         throw new TypeError(`prototype method ${name}.fromFRON() is missing`);
     } else if (proto.fromFRON.length < 1) {
@@ -35,16 +36,16 @@ function checkProto(name: string, proto: FRONHandlerPrototype) {
     }
 }
 
-export class Unknown { }
+class Unknown { }
 
 export function isMixed(type: string) {
     return !!MixedTypes[type];
 }
 
-export function register(type: string, proto: FRONHandlerPrototype);
+export function register(type: string, proto: FRONEntry);
 export function register(type: Function);
 export function register(type: string, asAlias: string);
-export function register(type: string | Function, proto?: string | FRONHandlerPrototype) {
+export function register(type: string | Function, proto?: string | FRONEntry) {
     if (typeof type === "function") {
         checkProto(type.name, type.prototype);
         MixedTypes[type.name] = type;

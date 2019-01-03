@@ -1,12 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const types_1 = require("./types");
-const literal_toolkit_1 = require("literal-toolkit");
 const pick = require("lodash/pick");
 const omit = require("lodash/omit");
 const upperFirst = require("lodash/upperFirst");
-const IsVar = /^[a-z_][a-z0-9_]*$/i;
-const MixedTypeHandlers = {
+const literal_toolkit_1 = require("literal-toolkit");
+const types_1 = require("./types");
+exports.MixedTypeHandlers = {
     "String": (data) => 'String(' + stringify(String(data)) + ')',
     "Boolean": (data) => "Boolean(" + String(data) + ")",
     "Number": (data) => "Number(" + String(data) + ")",
@@ -33,6 +32,7 @@ function getType(data) {
         return type == "object" ? types_1.MixedTypes.Object.name : type;
     }
 }
+exports.getType = getType;
 function getValues(data) {
     let arr = [];
     for (let item of data) {
@@ -40,6 +40,7 @@ function getValues(data) {
     }
     return arr;
 }
+exports.getValues = getValues;
 function stringifyCommon(data, indent, originalIndent, path, refMap) {
     let type = getType(data);
     if (!type || type == "function") {
@@ -78,7 +79,7 @@ function stringifyIterable(type, data, indent, originalIndent, path, refMap) {
     return stringifyMixed(type, data, indent, originalIndent, path, refMap);
 }
 function getHandler(type, indent, originalIndent, path, refMap) {
-    var handlers = Object.assign({}, MixedTypeHandlers, {
+    var handlers = Object.assign({}, exports.MixedTypeHandlers, {
         "Set": (data) => {
             return stringifyIterable(type, data, indent, originalIndent, path, refMap);
         },
@@ -92,7 +93,7 @@ function getHandler(type, indent, originalIndent, path, refMap) {
                 data = data.toFRON();
             }
             for (let x in data) {
-                let isVar = IsVar.test(x), prop = isVar ? x : `['${x}']`, res = stringifyCommon(data[x], indent + originalIndent, originalIndent, path + (isVar && path ? "." : "") + prop, refMap);
+                let isVar = types_1.Variable.test(x), prop = isVar ? x : `['${x}']`, res = stringifyCommon(data[x], indent + originalIndent, originalIndent, path + (isVar && path ? "." : "") + prop, refMap);
                 if (res !== undefined) {
                     if (indent) {
                         container.push((isVar ? x : stringify(x)) + `: ${res}`);

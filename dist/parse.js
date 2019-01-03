@@ -1,22 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const types_1 = require("./types");
-const literal_toolkit_1 = require("literal-toolkit");
+const path = require("path");
 const last = require("lodash/last");
 const pick = require("lodash/pick");
 const omit = require("lodash/omit");
 const get = require("lodash/get");
 const set = require("lodash/set");
-const path = require("path");
+const types_1 = require("./types");
+const literal_toolkit_1 = require("literal-toolkit");
 class SourceToken {
     constructor(token) {
         Object.assign(this, token);
     }
 }
 exports.SourceToken = SourceToken;
-const IsVar = /^[a-z_][a-z0-9_]*$/i;
-const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
-const MixedTypeHandlers = {
+exports.TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
+exports.MixedTypeHandlers = {
     "String": (data) => new String(data),
     "Number": (data) => new Number(data),
     "Boolean": (data) => new Boolean(data),
@@ -37,20 +36,23 @@ const MixedTypeHandlers = {
     }
 };
 types_1.ExtendedErrors.forEach(error => {
-    MixedTypeHandlers[error.name] = MixedTypeHandlers["Error"];
+    exports.MixedTypeHandlers[error.name] = exports.MixedTypeHandlers["Error"];
 });
 function throwSyntaxError(token) {
     let filename = token.filename, type = token.type ? token.type + " token" : "token", { line, column } = token.position.start;
     throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
 }
+exports.throwSyntaxError = throwSyntaxError;
 function getHandler(type) {
-    return MixedTypeHandlers[type] || (types_1.MixedTypes[type]
+    return exports.MixedTypeHandlers[type] || (types_1.MixedTypes[type]
         ? types_1.MixedTypes[type].prototype.fromFRON
         : undefined);
 }
+exports.getHandler = getHandler;
 function getInstance(type) {
     return types_1.MixedTypes[type] ? Object.create(types_1.MixedTypes[type].prototype) : void 0;
 }
+exports.getInstance = getInstance;
 function doParseToken(str, parent, cursor, listener) {
     let char;
     let token;
@@ -208,7 +210,7 @@ function doParseToken(str, parent, cursor, listener) {
                     cursor.column += dataToken.length;
                 }
                 else {
-                    let matches = remains.match(TypeOrPorp);
+                    let matches = remains.match(exports.TypeOrPorp);
                     if (matches) {
                         let lines = matches[0].split("\n"), key = matches[1];
                         cursor.index += key.length;
@@ -250,14 +252,15 @@ function doParseToken(str, parent, cursor, listener) {
     token.position.end = pick(cursor, ["line", "column"]);
     if (token.parent) {
         if (token.parent.type === "Object") {
-            let prop = token.data, prefix = get(token, "parent.parent.path", ""), path = IsVar.test(prop) ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
+            let prop = token.data, isVar = types_1.Variable.test(prop), prefix = get(token, "parent.parent.path", ""), path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
             token.path = (prefix || "") + path;
             token.type = "property";
             token.data = doParseToken(str, token, cursor, listener);
             token.parent.data[prop] = token;
         }
         else if (token.parent.type === "Array") {
-            token.path = (token.parent.path || "") + `[${token.parent.data.length}]`;
+            let prefix = get(token, "parent.path", "");
+            token.path = `${prefix}[${token.parent.data.length}]`;
             token.parent.data.push(token);
         }
     }
@@ -269,29 +272,6 @@ function doParseToken(str, parent, cursor, listener) {
         return token;
     }
 }
-function parseToken(str, filename, listener) {
-    return doParseToken(str, null, {
-        index: 0,
-        line: 1,
-        column: 1,
-        filename: filename ? path.resolve(filename) : "<anonymous>"
-    }, listener);
-}
-exports.parseToken = parseToken;
-function parse(str, filename) {
-    return composeToken(parseToken(str, filename));
-}
-exports.parse = parse;
-function composeToken(token) {
-    let refMap = {}, data = compose(token, refMap);
-    for (let path in refMap) {
-        let target = refMap[path];
-        let ref = target ? get(data, target) : data;
-        set(data, path, ref);
-    }
-    return data;
-}
-exports.composeToken = composeToken;
 function compose(token, refMap) {
     let data;
     switch (token.type) {
@@ -323,4 +303,27 @@ function compose(token, refMap) {
     }
     return data;
 }
+function composeToken(token) {
+    let refMap = {}, data = compose(token, refMap);
+    for (let path in refMap) {
+        let target = refMap[path];
+        let ref = target ? get(data, target) : data;
+        set(data, path, ref);
+    }
+    return data;
+}
+exports.composeToken = composeToken;
+function parseToken(str, filename, listener) {
+    return doParseToken(str, null, {
+        index: 0,
+        line: 1,
+        column: 1,
+        filename: filename ? path.resolve(filename) : "<anonymous>"
+    }, listener);
+}
+exports.parseToken = parseToken;
+function parse(str, filename) {
+    return composeToken(parseToken(str, filename));
+}
+exports.parse = parse;
 //# sourceMappingURL=parse.js.map

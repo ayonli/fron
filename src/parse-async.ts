@@ -1,10 +1,8 @@
 import * as path from "path";
 import last = require("lodash/last");
 import pick = require("lodash/pick");
-import omit = require("lodash/omit");
 import get = require("lodash/get");
-import set = require("lodash/set");
-import { Variable, MixedTypes, ExtendedErrors } from "./types";
+import { Variable } from "./types";
 import {
     LiteralToken,
     string,
@@ -13,91 +11,20 @@ import {
     comment,
     keyword
 } from 'literal-toolkit';
+import {
+    SourceToken,
+    CursorToken,
+    TypeOrPorp,
+    throwSyntaxError,
+    composeToken
+} from "./parse";
 
-export interface SourceToken {
-    filename: string;
-    position: {
-        start: {
-            line: number,
-            column: number
-        };
-        end: {
-            line: number,
-            column: number
-        };
-    };
-    type: string;
-    data: any;
-    parent?: SourceToken;
-    path?: string;
-}
-
-export class SourceToken implements SourceToken {
-    constructor(token: SourceToken) {
-        Object.assign(this, token);
-    }
-}
-
-export interface CursorToken {
-    index: number;
-    line: number;
-    column: number;
-    filename: string;
-}
-
-export const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
-export const MixedTypeHandlers = {
-    "String": (data: string) => new String(data),
-    "Number": (data: number) => new Number(data),
-    "Boolean": (data: boolean) => new Boolean(data),
-    "Date": (data: string) => new Date(data),
-    "Buffer": (data: number[]) => Buffer.from(data),
-    "Map": (data: [any, any][]) => new Map(data),
-    "Set": (data: any[]) => new Set(data),
-    "Symbol": (data: string) => Symbol.for(data),
-    "Error": (data: { [x: string]: any }) => {
-        let ctor: new (...args) => Error = ExtendedErrors[data.name] || Error,
-            err: Error = Object.create(ctor.prototype);
-
-        Object.defineProperties(err, {
-            name: { value: data.name },
-            message: { value: data.message },
-            stack: { value: data.stack }
-        });
-        Object.assign(err, omit(data, ["name", "message", "stack"]));
-
-        return err;
-    }
-};
-
-ExtendedErrors.forEach(error => {
-    MixedTypeHandlers[error.name] = MixedTypeHandlers["Error"];
-});
-
-export function throwSyntaxError(token: SourceToken) {
-    let filename = token.filename,
-        type = token.type ? token.type + " token" : "token",
-        { line, column } = token.position.start;
-    throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
-}
-
-export function getHandler(type: string): (data: any) => any {
-    return MixedTypeHandlers[type] || (MixedTypes[type]
-        ? MixedTypes[type].prototype.fromFRON
-        : undefined
-    );
-}
-
-export function getInstance(type: string): any {
-    return MixedTypes[type] ? Object.create(MixedTypes[type].prototype) : void 0;
-}
-
-function doParseToken(
+async function doParseToken(
     str: string,
     parent: SourceToken,
     cursor: CursorToken,
     listener?: (token: SourceToken) => void
-): SourceToken {
+): Promise<SourceToken> {
     let char: string;
     let token: SourceToken;
 
@@ -188,7 +115,7 @@ function doParseToken(
                 token.type = isArray ? "Array" : "Object";
                 token.data = isArray ? [] : {};
 
-                doParseToken(str, token, cursor, listener);
+                await doParseToken(str, token, cursor, listener);
                 break loop;
 
             // string
@@ -301,13 +228,13 @@ function doParseToken(
                             if (!parent && token.type === "Reference") {
                                 throwSyntaxError(token);
                             } else {
-                                token.data = doParseToken(str, token, cursor, listener);
+                                token.data = await doParseToken(str, token, cursor, listener);
 
                                 // since the token of personalized type will 
                                 // contain an extra closing bracket ")", and 
                                 // potential spaces, using doParseToken() can 
                                 // let the cursor travel through them.
-                                doParseToken(str, token, cursor);
+                                await doParseToken(str, token, cursor);
                             }
                         }
                     } else {
@@ -330,7 +257,7 @@ function doParseToken(
 
             token.path = (prefix || "") + path;
             token.type = "property";
-            token.data = doParseToken(str, token, cursor, listener);
+            token.data = await doParseToken(str, token, cursor, listener);
             token.parent.data[prop] = token;
         } else if (token.parent.type === "Array") { // array
             let prefix = get(token, "parent.path", "");
@@ -349,62 +276,11 @@ function doParseToken(
     }
 }
 
-function compose(token: SourceToken, refMap: { [path: string]: string }): any {
-    let data: any;
-
-    switch (token.type) {
-        case "Object":
-            data = {};
-            for (let prop in token.data) {
-                data[prop] = compose(token.data[prop].data, refMap);
-            }
-            break;
-
-        case "Array":
-            data = [];
-            for (let item of token.data) {
-                data.push(compose(item, refMap));
-            }
-            break;
-
-        case "Reference":
-            refMap[token.parent.path] = compose(token.data, refMap);
-            break;
-
-        default:
-            if (token.data instanceof SourceToken) {
-                let handle = getHandler(token.type),
-                    inst = getInstance(token.type);
-
-                data = compose(token.data, refMap);
-                data = handle ? handle.call(inst || data, data) : data;
-            } else {
-                data = token.data;
-            }
-            break;
-    }
-
-    return data;
-}
-
-export function composeToken(token: SourceToken): any {
-    let refMap = {},
-        data = compose(token, refMap);
-
-    for (let path in refMap) {
-        let target = refMap[path];
-        let ref = target ? get(data, target) : data;
-        set(data, path, ref);
-    }
-
-    return data;
-}
-
-export function parseToken(
+export async function parseTokenAsync(
     str: string,
     filename?: string,
     listener?: (token: SourceToken) => void
-): SourceToken {
+) {
     return doParseToken(str, null, {
         index: 0,
         line: 1,
@@ -413,6 +289,6 @@ export function parseToken(
     }, listener);
 }
 
-export function parse(str: string, filename?: string): any {
-    return composeToken(parseToken(str, filename));
+export async function parseAsync(str: string, filename?: string) {
+    return composeToken(await parseTokenAsync(str, filename));
 }

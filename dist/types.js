@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert_1 = require("assert");
+exports.Variable = /^[a-z_][a-z0-9_]*$/i;
 exports.MixedTypes = {
     Array,
     Boolean,
@@ -22,6 +23,7 @@ exports.ExtendedErrors = [
     SyntaxError,
     TypeError
 ];
+;
 function checkProto(name, proto) {
     if (typeof proto.fromFRON !== "function") {
         throw new TypeError(`prototype method ${name}.fromFRON() is missing`);
@@ -32,7 +34,6 @@ function checkProto(name, proto) {
 }
 class Unknown {
 }
-exports.Unknown = Unknown;
 function isMixed(type) {
     return !!exports.MixedTypes[type];
 }

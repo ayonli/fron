@@ -1,54 +1,16 @@
 import pick = require("lodash/pick");
 import omit = require("lodash/omit");
-import upperFirst = require("lodash/upperFirst");
 import { string } from "literal-toolkit";
 import { Variable, MixedTypes, ExtendedErrors, isMixed } from './types';
+import { MixedTypeHandlers, getType, getValues, stringify } from "./stringify";
 
-export const MixedTypeHandlers: { [x: string]: (data) => string } = {
-    "String": (data: String) => 'String(' + stringify(String(data)) + ')',
-    "Boolean": (data: Boolean) => "Boolean(" + String(data) + ")",
-    "Number": (data: Number) => "Number(" + String(data) + ")",
-    "Date": (data: Date) => "Date(" + stringify(data.toISOString()) + ")",
-    "RegExp": (data: RegExp) => String(data),
-};
-
-export function getType(data: any): string {
-    if (data === undefined) {
-        return;
-    } else if (data === null) {
-        return "null";
-    } else {
-        let type = typeof data,
-            Type = upperFirst(type),
-            isObj = type == "object";
-
-        for (let x in MixedTypes) {
-            if (isObj && data.constructor.name === x) {
-                return x;
-            } else if (!isObj && x === Type) {
-                return type;
-            }
-        }
-
-        return type == "object" ? MixedTypes.Object.name : type;
-    }
-}
-
-export function getValues<T>(data: Iterable<T>): T[] {
-    let arr = [];
-    for (let item of data) {
-        arr.push(item);
-    }
-    return arr;
-}
-
-function stringifyCommon(
+async function stringifyCommon(
     data: any,
     indent: string,
     originalIndent: string,
     path: string,
     refMap: Map<any, string>
-): string {
+): Promise<string> {
     let type = getType(data);
 
     if (!type || type == "function") {
@@ -72,7 +34,7 @@ function stringifyCommon(
     }
 }
 
-function stringifyMixed(
+async function stringifyMixed(
     type: string,
     data: any,
     indent: string,
@@ -81,7 +43,7 @@ function stringifyMixed(
     refMap: Map<any, string>
 ) {
     return type + "("
-        + stringifyCommon(data, indent, originalIndent, path, refMap)
+        + (await stringifyCommon(data, indent, originalIndent, path, refMap))
         + ")";
 }
 
@@ -92,7 +54,7 @@ function stringifyIterable<T>(
     originalIndent: string,
     path: string,
     refMap: Map<any, string>
-): string {
+) {
     data = getValues(data);
     return stringifyMixed(type, data, indent, originalIndent, path, refMap);
 }
@@ -103,8 +65,8 @@ function getHandler(
     originalIndent: string,
     path: string,
     refMap: Map<any, string>
-): (data: any) => string {
-    var handlers = Object.assign({}, MixedTypeHandlers, {
+): (data: any) => (string | Promise<string>) {
+    var handlers = Object.assign({}, <object>MixedTypeHandlers, {
         "Set": (data: Buffer) => {
             return stringifyIterable(type, data, indent, originalIndent, path, refMap);
         },
@@ -114,7 +76,7 @@ function getHandler(
 
             return stringifyMixed(type, res, indent, originalIndent, path, refMap);
         },
-        "Object": (data: any) => {
+        "Object": async (data: any) => {
             let container: string[] = [];
 
             if (typeof data.toFRON == "function") {
@@ -124,7 +86,7 @@ function getHandler(
             for (let x in data) {
                 let isVar = Variable.test(x),
                     prop = isVar ? x : `['${x}']`,
-                    res = stringifyCommon(
+                    res = await stringifyCommon(
                         data[x],
                         indent + originalIndent,
                         originalIndent,
@@ -149,11 +111,11 @@ function getHandler(
                 return "{" + container.join(",") + "}";
             }
         },
-        "Array": (data: any[]) => {
+        "Array": async (data: any[]) => {
             let container: string[] = [];
 
             for (let i = 0; i < data.length; i++) {
-                let res = stringifyCommon(
+                let res = await stringifyCommon(
                     data[i],
                     indent + originalIndent,
                     originalIndent,
@@ -180,7 +142,7 @@ function getHandler(
     if (handlers[type]) {
         return handlers[type];
     } else if (MixedTypes[type]) {
-        return (data: any) => {
+        return async (data: any) => {
             let handler = MixedTypes[type].prototype.toFRON;
 
             if (handler) {
@@ -189,14 +151,17 @@ function getHandler(
                 data = Object.assign({}, data);
             }
 
-            return type + "("
-                + stringifyCommon(data, indent, originalIndent, path, refMap)
-                + ")";
+            return type + "(" + (await stringifyCommon(
+                data,
+                indent,
+                originalIndent,
+                path, refMap
+            )) + ")";
         }
     }
 }
 
-export function stringify(data: any, pretty?: boolean | string) {
+export async function stringifyAsync(data: any, pretty?: boolean | string) {
     let indent = "";
 
     if (pretty) {
