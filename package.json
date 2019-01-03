@@ -36,6 +36,8 @@
     "source-map-support": "^0.5.9"
   },
   "dependencies": {
+    "@types/colors": "^1.2.1",
+    "colors": "^1.3.3",
     "literal-toolkit": "^1.1.0",
     "lodash": "^4.17.11",
     "safe-string-literal": "^1.0.1",
