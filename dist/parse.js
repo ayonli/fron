@@ -40,7 +40,7 @@ types_1.ExtendedErrors.forEach(error => {
     MixedTypeHandlers[error.name] = MixedTypeHandlers["Error"];
 });
 function throwSyntaxError(token) {
-    let filename = token.filename ? path.resolve(token.filename) : "<anonymous>", type = token.type ? token.type + " token" : "token", { line, column } = token.position.start;
+    let filename = token.filename, type = token.type ? token.type + " token" : "token", { line, column } = token.position.start;
     throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
 }
 function getHandler(type) {
@@ -68,7 +68,7 @@ function doParseToken(str, parent, cursor, listener) {
         }
         let remains, dataToken;
         token = new SourceToken({
-            filename: cursor.filename || "<anonymous>",
+            filename: cursor.filename,
             position: {
                 start: pick(cursor, ["line", "column"]),
                 end: undefined
@@ -274,7 +274,7 @@ function parseToken(str, filename, listener) {
         index: 0,
         line: 1,
         column: 1,
-        filename
+        filename: filename ? path.resolve(filename) : "<anonymous>"
     }, listener);
 }
 exports.parseToken = parseToken;

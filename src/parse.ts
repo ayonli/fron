@@ -8,7 +8,7 @@ import set = require("lodash/set");
 import * as path from "path";
 
 export interface SourceToken {
-    filename?: string;
+    filename: string;
     position: {
         start: {
             line: number,
@@ -35,7 +35,7 @@ interface CursorToken {
     index: number;
     line: number;
     column: number;
-    filename?: string;
+    filename: string;
 }
 
 const IsVar = /^[a-z_][a-z0-9_]*$/i;
@@ -69,7 +69,7 @@ ExtendedErrors.forEach(error => {
 });
 
 function throwSyntaxError(token: SourceToken) {
-    let filename = token.filename ? path.resolve(token.filename) : "<anonymous>",
+    let filename = token.filename,
         type = token.type ? token.type + " token" : "token",
         { line, column } = token.position.start;
     throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
@@ -109,7 +109,7 @@ function doParseToken(str: string, parent: SourceToken, cursor: CursorToken, lis
             dataToken: LiteralToken & { value: any, type?: string };
 
         token = new SourceToken({
-            filename: cursor.filename || "<anonymous>",
+            filename: cursor.filename,
             position: {
                 start: pick(cursor, ["line", "column"]),
                 end: undefined
@@ -340,7 +340,7 @@ export function parseToken(str: string, filename?: string, listener?: (token: So
         index: 0,
         line: 1,
         column: 1,
-        filename
+        filename: filename ? path.resolve(filename) : "<anonymous>"
     }, listener);
 }
 
