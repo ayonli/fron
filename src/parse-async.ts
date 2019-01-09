@@ -276,7 +276,7 @@ async function doParseToken(
     }
 }
 
-export async function parseTokenAsync(
+export async function parseToken(
     str: string,
     filename?: string,
     listener?: (token: SourceToken) => void
@@ -289,6 +289,6 @@ export async function parseTokenAsync(
     }, listener);
 }
 
-export async function parseAsync(str: string, filename?: string) {
-    return composeToken(await parseTokenAsync(str, filename));
+export async function parse(str: string, filename?: string) {
+    return composeToken(await parseToken(str, filename));
 }

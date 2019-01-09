@@ -1,47 +1,8 @@
-import pick = require("lodash/pick");
-import omit = require("lodash/omit");
-import upperFirst = require("lodash/upperFirst");
+import get = require("lodash/get");
 import { string } from "literal-toolkit";
-import { Variable, MixedTypes, ExtendedErrors, isMixed } from './types';
+import { Variable, MixedTypes, isMixed, getType } from './types';
 
-export const MixedTypeHandlers: { [x: string]: (data) => string } = {
-    "String": (data: String) => 'String(' + stringify(String(data)) + ')',
-    "Boolean": (data: Boolean) => "Boolean(" + String(data) + ")",
-    "Number": (data: Number) => "Number(" + String(data) + ")",
-    "Date": (data: Date) => "Date(" + stringify(data.toISOString()) + ")",
-    "RegExp": (data: RegExp) => String(data),
-};
-
-export function getType(data: any): string {
-    if (data === undefined) {
-        return;
-    } else if (data === null) {
-        return "null";
-    } else {
-        let type = typeof data,
-            Type = upperFirst(type),
-            isObj = type == "object";
-
-        for (let x in MixedTypes) {
-            if (isObj && data.constructor.name === x) {
-                return x;
-            } else if (!isObj && x === Type) {
-                return type;
-            }
-        }
-
-        return type == "object" ? MixedTypes.Object.name : type;
-    }
-}
-
-export function getValues<T>(data: Iterable<T>): T[] {
-    let arr = [];
-    for (let item of data) {
-        arr.push(item);
-    }
-    return arr;
-}
-
+/** Stringifies any type of data in a common way. */
 function stringifyCommon(
     data: any,
     indent: string,
@@ -58,10 +19,18 @@ function stringifyCommon(
     } else if (type == "string") {
         return string.toLiteral(data);
     } else if (type == "symbol") {
+        // Only support the symbols that registered globally.
         let key = Symbol.keyFor(data);
-        return key === undefined ? void 0 : "Symbol(" + stringify(key) + ")";
+        return key === undefined ? key : "Symbol(" + stringify(key) + ")";
     } else if (isMixed(type)) {
         if (refMap.has(data)) {
+            // `Reference` is a special type in FRON, it indicates that the 
+            // current property references to another property, they are 
+            // `aliases` to each other. When stringifing, the first reached 
+            // property will be transferred as usual, but other properties that 
+            // reference to this property will only be notate as an `Reference` 
+            // with the original path, and the parser can use that path to set
+            // property when parsing.
             return "Reference(" + stringify(refMap.get(data)) + ")";
         } else {
             refMap.set(data, path);
@@ -72,31 +41,7 @@ function stringifyCommon(
     }
 }
 
-function stringifyMixed(
-    type: string,
-    data: any,
-    indent: string,
-    originalIndent: string,
-    path: string,
-    refMap: Map<any, string>
-) {
-    return type + "("
-        + stringifyCommon(data, indent, originalIndent, path, refMap)
-        + ")";
-}
-
-function stringifyIterable<T>(
-    type: string,
-    data: Iterable<T>,
-    indent: string,
-    originalIndent: string,
-    path: string,
-    refMap: Map<any, string>
-): string {
-    data = getValues(data);
-    return stringifyMixed(type, data, indent, originalIndent, path, refMap);
-}
-
+/** Gets the handler to stringify the corresponding mixed type. */
 function getHandler(
     type: string,
     indent: string,
@@ -104,23 +49,17 @@ function getHandler(
     path: string,
     refMap: Map<any, string>
 ): (data: any) => string {
-    var handlers = Object.assign({}, MixedTypeHandlers, {
-        "Set": (data: Buffer) => {
-            return stringifyIterable(type, data, indent, originalIndent, path, refMap);
-        },
-        "Error": (data: Error) => {
-            let reserved = ["name", "message", "stack"],
-                res = Object.assign(pick(data, reserved), omit(data, reserved));
-
-            return stringifyMixed(type, res, indent, originalIndent, path, refMap);
-        },
+    var handlers = {
         "Object": (data: any) => {
             let container: string[] = [];
 
             if (typeof data.toFRON == "function") {
+                // If the given object includes a `toFRON()` method, call it and
+                // get the returning value as the data to be stringified.
                 data = data.toFRON();
             }
 
+            // Stringify all enumerable properties of the object.
             for (let x in data) {
                 let isVar = Variable.test(x),
                     prop = isVar ? x : `['${x}']`,
@@ -132,16 +71,15 @@ function getHandler(
                         refMap
                     );
 
-                if (res !== undefined) {
-                    if (indent) {
-                        container.push((isVar ? x : stringify(x)) + `: ${res}`);
-                    } else {
-                        container.push((isVar ? x : stringify(x)) + `:${res}`);
-                    }
-                }
+                if (res === undefined)
+                    continue; // If the result returns undefined, skip it.
+                else if (indent)
+                    container.push((isVar ? x : stringify(x)) + `: ${res}`);
+                else
+                    container.push((isVar ? x : stringify(x)) + `:${res}`);
             }
 
-            if (indent && container.length) {
+            if (indent && container.length) { // use indentation
                 return "{\n"
                     + indent + container.join(",\n" + indent) + "\n"
                     + indent.slice(0, -originalIndent.length) + "}";
@@ -152,6 +90,7 @@ function getHandler(
         "Array": (data: any[]) => {
             let container: string[] = [];
 
+            // Only stringify iterable elements of the array.
             for (let i = 0; i < data.length; i++) {
                 let res = stringifyCommon(
                     data[i],
@@ -161,10 +100,11 @@ function getHandler(
                     refMap
                 );
 
-                (res !== undefined) && container.push(<string>res);
+                // skip undefined result
+                (res !== undefined) && container.push(res);
             }
 
-            if (indent && container.length) {
+            if (indent && container.length) { // use indentation
                 return "[\n"
                     + indent + container.join(",\n" + indent) + "\n"
                     + indent.slice(0, -originalIndent.length) + "]";
@@ -172,30 +112,43 @@ function getHandler(
                 return "[" + container.join(",") + "]";
             }
         },
-    });
-
-    handlers["Buffer"] = handlers["Map"] = handlers["Set"];
-    ExtendedErrors.forEach(error => handlers[error.name] = handlers["Error"]);
+    };
 
     if (handlers[type]) {
         return handlers[type];
-    } else if (MixedTypes[type]) {
+    } else {
         return (data: any) => {
-            let handler = MixedTypes[type].prototype.toFRON;
+            let handler: () => any = get(MixedTypes[type], "prototype.toFRON");
 
             if (handler) {
+                // If there is a handler registered to deal with the type, apply
+                // it to the data. The reason to call `apply()` instead of 
+                // calling the method directly is that the handler method may 
+                // not exist on the data instance, it may be registered with an 
+                // object as prototype in the first place.
                 data = handler.apply(data);
             } else {
+                // If no handler is found, stringify the data as an ordinary 
+                // object with only its enumerable properties.
                 data = Object.assign({}, data);
             }
 
-            return type + "("
-                + stringifyCommon(data, indent, originalIndent, path, refMap)
-                + ")";
+            return type + "(" + stringifyCommon(
+                data,
+                indent,
+                originalIndent,
+                path,
+                refMap
+            ) + ")";
         }
     }
 }
 
+/**
+ * Stringifies the given data into a FRON string.
+ * @param pretty The default indentation is two spaces, other than that, set 
+ *  any strings for indentation is allowed.
+ */
 export function stringify(data: any, pretty?: boolean | string) {
     let indent = "";
 
@@ -203,5 +156,5 @@ export function stringify(data: any, pretty?: boolean | string) {
         indent = typeof pretty == "string" ? pretty : "  ";
     }
 
-    return stringifyCommon(data, indent, indent, "", new Map());
+    return stringifyCommon(data, indent, indent, "", new Map<any, string>());
 }

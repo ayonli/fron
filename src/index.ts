@@ -1,8 +1,11 @@
 import { register, FRONEntry } from "./types";
 import { stringify } from "./stringify";
-import { stringifyAsync } from "./stringify-async";
+import { stringify as stringifyAsync } from "./stringify-async";
 import { parse, parseToken, composeToken, SourceToken } from "./parse";
-import { parseAsync, parseTokenAsync, } from "./parse-async";
+import {
+    parse as parseAsync,
+    parseToken as parseTokenAsync,
+} from "./parse-async";
 
 export {
     register,

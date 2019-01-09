@@ -1,10 +1,9 @@
 import * as path from "path";
 import last = require("lodash/last");
 import pick = require("lodash/pick");
-import omit = require("lodash/omit");
 import get = require("lodash/get");
 import set = require("lodash/set");
-import { Variable, MixedTypes, ExtendedErrors } from "./types";
+import { Variable, MixedTypes } from "./types";
 import {
     LiteralToken,
     string,
@@ -46,33 +45,6 @@ export interface CursorToken {
 }
 
 export const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
-export const MixedTypeHandlers = {
-    "String": (data: string) => new String(data),
-    "Number": (data: number) => new Number(data),
-    "Boolean": (data: boolean) => new Boolean(data),
-    "Date": (data: string) => new Date(data),
-    "Buffer": (data: number[]) => Buffer.from(data),
-    "Map": (data: [any, any][]) => new Map(data),
-    "Set": (data: any[]) => new Set(data),
-    "Symbol": (data: string) => Symbol.for(data),
-    "Error": (data: { [x: string]: any }) => {
-        let ctor: new (...args) => Error = ExtendedErrors[data.name] || Error,
-            err: Error = Object.create(ctor.prototype);
-
-        Object.defineProperties(err, {
-            name: { value: data.name },
-            message: { value: data.message },
-            stack: { value: data.stack }
-        });
-        Object.assign(err, omit(data, ["name", "message", "stack"]));
-
-        return err;
-    }
-};
-
-ExtendedErrors.forEach(error => {
-    MixedTypeHandlers[error.name] = MixedTypeHandlers["Error"];
-});
 
 export function throwSyntaxError(token: SourceToken) {
     let filename = token.filename,
@@ -82,10 +54,7 @@ export function throwSyntaxError(token: SourceToken) {
 }
 
 export function getHandler(type: string): (data: any) => any {
-    return MixedTypeHandlers[type] || (MixedTypes[type]
-        ? MixedTypes[type].prototype.fromFRON
-        : undefined
-    );
+    return get(MixedTypes[type], "prototype.fromFRON");
 }
 
 export function getInstance(type: string): any {
@@ -404,7 +373,7 @@ export function parseToken(
     str: string,
     filename?: string,
     listener?: (token: SourceToken) => void
-): SourceToken {
+) {
     return doParseToken(str, null, {
         index: 0,
         line: 1,
@@ -413,6 +382,6 @@ export function parseToken(
     }, listener);
 }
 
-export function parse(str: string, filename?: string): any {
+export function parse(str: string, filename?: string) {
     return composeToken(parseToken(str, filename));
 }

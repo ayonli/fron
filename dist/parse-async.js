@@ -229,7 +229,7 @@ function doParseToken(str, parent, cursor, listener) {
         }
     });
 }
-function parseTokenAsync(str, filename, listener) {
+function parseToken(str, filename, listener) {
     return tslib_1.__awaiter(this, void 0, void 0, function* () {
         return doParseToken(str, null, {
             index: 0,
@@ -239,11 +239,11 @@ function parseTokenAsync(str, filename, listener) {
         }, listener);
     });
 }
-exports.parseTokenAsync = parseTokenAsync;
-function parseAsync(str, filename) {
+exports.parseToken = parseToken;
+function parse(str, filename) {
     return tslib_1.__awaiter(this, void 0, void 0, function* () {
-        return parse_1.composeToken(yield parseTokenAsync(str, filename));
+        return parse_1.composeToken(yield parseToken(str, filename));
     });
 }
-exports.parseAsync = parseAsync;
+exports.parse = parse;
 //# sourceMappingURL=parse-async.js.map

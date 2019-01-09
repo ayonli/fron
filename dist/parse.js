@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const last = require("lodash/last");
 const pick = require("lodash/pick");
-const omit = require("lodash/omit");
 const get = require("lodash/get");
 const set = require("lodash/set");
 const types_1 = require("./types");
@@ -15,38 +14,13 @@ class SourceToken {
 }
 exports.SourceToken = SourceToken;
 exports.TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
-exports.MixedTypeHandlers = {
-    "String": (data) => new String(data),
-    "Number": (data) => new Number(data),
-    "Boolean": (data) => new Boolean(data),
-    "Date": (data) => new Date(data),
-    "Buffer": (data) => Buffer.from(data),
-    "Map": (data) => new Map(data),
-    "Set": (data) => new Set(data),
-    "Symbol": (data) => Symbol.for(data),
-    "Error": (data) => {
-        let ctor = types_1.ExtendedErrors[data.name] || Error, err = Object.create(ctor.prototype);
-        Object.defineProperties(err, {
-            name: { value: data.name },
-            message: { value: data.message },
-            stack: { value: data.stack }
-        });
-        Object.assign(err, omit(data, ["name", "message", "stack"]));
-        return err;
-    }
-};
-types_1.ExtendedErrors.forEach(error => {
-    exports.MixedTypeHandlers[error.name] = exports.MixedTypeHandlers["Error"];
-});
 function throwSyntaxError(token) {
     let filename = token.filename, type = token.type ? token.type + " token" : "token", { line, column } = token.position.start;
     throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
 }
 exports.throwSyntaxError = throwSyntaxError;
 function getHandler(type) {
-    return exports.MixedTypeHandlers[type] || (types_1.MixedTypes[type]
-        ? types_1.MixedTypes[type].prototype.fromFRON
-        : undefined);
+    return get(types_1.MixedTypes[type], "prototype.fromFRON");
 }
 exports.getHandler = getHandler;
 function getInstance(type) {
