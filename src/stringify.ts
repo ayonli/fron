@@ -1,6 +1,6 @@
 import get = require("lodash/get");
 import { string } from "literal-toolkit";
-import { Variable, MixedTypes, isMixed, getType } from './types';
+import { Variable, MixedTypes, isMixed, getType, FRONString } from './types';
 
 /** Stringifies any type of data in a common way. */
 function stringifyCommon(
@@ -133,13 +133,17 @@ function getHandler(
                 data = Object.assign({}, data);
             }
 
-            return type + "(" + stringifyCommon(
-                data,
-                indent,
-                originalIndent,
-                path,
-                refMap
-            ) + ")";
+            if (data instanceof FRONString) {
+                return data.valueOf();
+            } else {
+                return type + "(" + stringifyCommon(
+                    data,
+                    indent,
+                    originalIndent,
+                    path,
+                    refMap
+                ) + ")";
+            }
         }
     }
 }

@@ -114,12 +114,18 @@ function doParseToken(
     loop:
     while ((char = str[cursor.index])) {
         if (<any>char == false && char !== "0") {
+            // For falsy characters (except string '0'), only move the cursor 
+            // forward, and do not parse any tokens.
+
             cursor.index++;
 
             if (char === "\n") {
+                // Meet new line, increase the line number and move the column 
+                // to the line head.
                 cursor.line++;
                 cursor.column = 1;
             } else {
+                // Otherwise increase the column number only.
                 cursor.column++;
             }
 
@@ -129,6 +135,8 @@ function doParseToken(
         let remains: string,
             dataToken: LiteralToken & { value: any, type?: string };
 
+        // Use a SourceToken instance, so that it could be distinguished from
+        // common objects.
         token = new SourceToken({
             filename: cursor.filename,
             position: {
@@ -139,10 +147,14 @@ function doParseToken(
             data: undefined,
         });
 
+        // Using this method, so that the parent property won't be always showed
+        // up on the token.
         if (parent) token.parent = parent;
 
         switch (char) {
             case ",":
+                // A comma (`,`) appears right after a property value in an 
+                // object, or an element in an array.
                 if (parent && ["Object", "Array"].indexOf(parent.type) >= 0) {
                     cursor.index++;
                     cursor.column++;
@@ -152,6 +164,8 @@ function doParseToken(
                 break;
 
             case ":":
+                // A colon (`:`) appears right after a property name in an 
+                // object.
                 if (parent && parent.type === "property") {
                     cursor.index++;
                     cursor.column++;
@@ -161,6 +175,14 @@ function doParseToken(
                 break;
 
             case "(":
+                // The open bracket (`(`) appears right after a mixed type name,
+                // which will be parsed as an individual token, and the bracket
+                // only indicates that it's the beginning of the type container.
+                // A mixed type notation uses a type name and a pair of brackets
+                // to form a container, inside the container, is an pure object
+                // literal or array literal.
+                // The parent here is the very type name node of the mixed type
+                // notation.
                 if (parent) {
                     cursor.index++;
                     cursor.column++
@@ -170,27 +192,27 @@ function doParseToken(
                 break;
 
             case ")":
+                // The closing bracket (`)`) indicates the end position of a 
+                // mixed type container, see above.
                 if (parent) {
                     cursor.index++;
                     cursor.column++
                 } else {
                     throwSyntaxError(token);
                 }
+
+                // Break the loop means the current node has been fully parsed,
+                // if the node is not yet fully parsed, should just break the 
+                // switch block and continue parsing. Once a token has been 
+                // fully parsed, break the loop and go to the end of the 
+                // function for summary, gather and fill the token details. 
                 break loop;
 
-            case "]":
-            case "}":
-                if (parent) {
-                    cursor.index++;
-                    cursor.column++;
-                } else {
-                    throwSyntaxError(token);
-                }
-                return;
-
-            // object and array
-            case "[":
-            case "{":
+            case "{": // object
+            case "[": // array
+                // Like the very JavaScript style, an object literal uses a pair
+                // of curly braces to contain key-value pairs, and an array
+                // literal uses a pair of square brackets to contain elements.
                 let isArray = char === "[";
 
                 cursor.index++;
@@ -198,13 +220,39 @@ function doParseToken(
                 token.type = isArray ? "Array" : "Object";
                 token.data = isArray ? [] : {};
 
+                // Objects and arrays contains sub-nodes (inner tokens), so 
+                // recursively calling `doParseToken` to parse them before 
+                // parsing continuing tokens. Since the cursor is a reference,
+                // not a copy, when parsing inner tokens and move the cursor, 
+                // the outside node will follow the cursor, and keep parsing
+                // from where the inner nodes ends.
                 doParseToken(str, token, cursor, listener);
                 break loop;
 
-            // string
-            case "'":
-            case '"':
-            case "`":
+            case "}": // closing sign of an object
+            case "]": // closing sign of an array
+                if (parent) {
+                    cursor.index++;
+                    cursor.column++;
+                } else {
+                    throwSyntaxError(token);
+                }
+
+                // The closing bracket of an object or array indicates the 
+                // "block" is finished, and should no longer try to parse 
+                // remaining tokens since they don't belong to the object or the
+                // array. `doParseToken()` will try to parse remaining tokens
+                // once a former token is parsed, since we don't need to parse 
+                // them, return immediately to prevent that happens. 
+                return;
+
+            case "'": // single-quoted string
+            case '"': // double-quoted string
+            case "`": // back-quoted string
+                // Once a token type has been identified, assign it to the token
+                // object immediately, so that when even the token is invalid 
+                // and throw a syntax error, the error can still tell what kind 
+                // of token that is.
                 token.type = "string";
 
                 if ((dataToken = string.parseToken(str.slice(cursor.index)))) {
@@ -215,7 +263,9 @@ function doParseToken(
                     cursor.line += lines.length - 1;
 
                     if (lines.length > 1) {
-                        cursor.column = last(lines).length;
+                        // If the string takes multiple lines, move the column 
+                        // number to the end of the last line.
+                        cursor.column = last(lines).length + 1;
                     } else {
                         cursor.column += dataToken.length;
                     }
@@ -224,26 +274,26 @@ function doParseToken(
                 }
                 break loop;
 
-            // regular expression or comment
-            case "/":
+            case "/": // regular expression or comment
                 token.type = "regexp";
                 remains = str.slice(cursor.index);
 
-                if ((dataToken = regexp.parseToken(remains))) {
+                if ((dataToken = regexp.parseToken(remains))) { // regexp
                     token.data = dataToken.value;
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
-                } else if ((dataToken = comment.parseToken(remains))) {
+                } else if ((dataToken = comment.parseToken(remains))) { // comment
                     token.type = "comment";
                     token.data = dataToken.value;
                     cursor.index += dataToken.length;
 
                     if (dataToken.type !== "//") {
+                        // Multi-line comment starts with `/*` or `/**`.
                         let lines = dataToken.source.split("\n");
                         cursor.line += lines.length - 1;
 
                         if (lines.length > 1) {
-                            cursor.column = last(lines).length;
+                            cursor.column = last(lines).length + 1;
                         } else {
                             cursor.column += dataToken.length;
                         }
@@ -253,10 +303,8 @@ function doParseToken(
                 }
                 break loop;
 
-            // binary, octal or hexadecimal number, or decimal number starts 
-            // with `.`.
-            case "0":
-            case ".":
+            case "0": // binary, octal or hexadecimal number
+            case ".": // decimal (float) number starts with a point
                 token.type = "number";
 
                 if ((dataToken = number.parseToken(str.slice(cursor.index)))) {
@@ -292,7 +340,10 @@ function doParseToken(
                         cursor.line += lines.length - 1;
 
                         if (lines.length > 1) {
-                            cursor.column = last(lines).length;
+                            // If there are new lines between the property (or 
+                            // type name) and the colon(or open bracket), move 
+                            // the column number to the head of the line.
+                            cursor.column = 1;
                         } else {
                             cursor.column += key.length;
                         }
@@ -300,21 +351,29 @@ function doParseToken(
                         if (last(matches[0]) === ":") { // property
                             token.type = "property";
 
+                            // A property can only appears inside an object.
                             if (parent && parent.type === "Object") {
                                 token.data = key;
                             } else {
                                 throwSyntaxError(token);
                             }
                         } else {
-                            token.type = key; // personalized type
+                            token.type = key; // mixed type
 
                             if (!parent && token.type === "Reference") {
+                                // A reference type con only appears inside a
+                                // mixed type (object, array or something else).
                                 throwSyntaxError(token);
                             } else {
-                                token.data = doParseToken(str, token, cursor, listener);
+                                token.data = doParseToken(
+                                    str,
+                                    token,
+                                    cursor,
+                                    listener
+                                );
 
-                                // since the token of personalized type will 
-                                // contain an extra closing bracket ")", and 
+                                // Since the token of a customized mixed type 
+                                // contains an extra closing bracket ")", and 
                                 // potential spaces, using doParseToken() can 
                                 // let the cursor travel through them.
                                 doParseToken(str, token, cursor);
@@ -331,34 +390,46 @@ function doParseToken(
 
     token.position.end = pick(cursor, ["line", "column"]);
 
-    if (token.parent) { // mixed type
-        if (token.parent.type === "Object") {
-            let prop = token.data,
-                isVar = Variable.test(prop),
-                prefix = get(token, "parent.parent.path", ""),
-                path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
+    if (token.parent && token.parent.type === "Object") { // object
+        let prop = token.data,
+            isVar = Variable.test(prop),
+            prefix = get(token, "parent.parent.path", ""),
+            path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
 
-            token.path = (prefix || "") + path;
-            token.type = "property";
-            token.data = doParseToken(str, token, cursor, listener);
-            token.parent.data[prop] = token;
-        } else if (token.parent.type === "Array") { // array
-            let prefix = get(token, "parent.path", "");
+        // If the parent node is an object, that means the current node is a 
+        // property node, should set the path and parse the property value as a
+        // child node.
+        token.path = (prefix || "") + path;
+        token.type = "property";
+        token.data = doParseToken(str, token, cursor, listener);
 
-            token.path = `${prefix}[${token.parent.data.length}]`;
-            token.parent.data.push(token);
-        }
+        // Append the current node to the parent node as a new property. 
+        token.parent.data[prop] = token;
+    } else if (token.parent && token.parent.type === "Array") { // array
+        let prefix = get(token, "parent.path", "");
+
+        // If the parent node is an array, append the current node to the parent
+        // node as its element.
+        token.path = `${prefix}[${token.parent.data.length}]`;
+        token.parent.data.push(token);
     }
 
+    // If there is a listener bound, call it to watch all parsing moments.
     listener && listener.call(void 0, token);
 
     if (token.parent && ["Object", "Array"].indexOf(token.parent.type) >= 0) {
+        // If the parent node is either object or array, try to parse remaining 
+        // tokens as its properties (or elements).
         return doParseToken(str, token.parent, cursor, listener);
     } else {
         return token;
     }
 }
 
+/**
+ * Composes all tokens (include children nodes) to a JavaScript object and 
+ * gather all references into a map.
+ */
 function compose(token: SourceToken, refMap: { [path: string]: string }): any {
     let data: any;
 
@@ -366,6 +437,8 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
         case "Object":
             data = {};
             for (let prop in token.data) {
+                // Every property in an object token is also SourceToken, which
+                // should be composed recursively.
                 data[prop] = compose(token.data[prop].data, refMap);
             }
             break;
@@ -373,11 +446,15 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
         case "Array":
             data = [];
             for (let item of token.data) {
+                // Every element in an array token is also SourceToken, which
+                // should be composed recursively.
                 data.push(compose(item, refMap));
             }
             break;
 
         case "Reference":
+            // The data contained by Reference is a SourceToken with string,
+            // which should be composed first before using it.
             refMap[token.parent.path] = compose(token.data, refMap);
             break;
 
@@ -386,7 +463,9 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
                 let handle = getHandler(token.type),
                     inst = getInstance(token.type);
 
-                data = compose(token.data, refMap);
+                data = compose(token.data, refMap); // try to compose first
+
+                // Try to call registered parsing handler to get expected data.
                 data = handle ? handle.call(inst || data, data) : data;
             } else {
                 data = token.data;
@@ -397,10 +476,12 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
     return data;
 }
 
+/** Composes a token or token tree to a JavaScript object. */
 export function composeToken(token: SourceToken): any {
     let refMap = {},
         data = compose(token, refMap);
 
+    // Sets all references according to the map.
     for (let path in refMap) {
         let target = refMap[path];
         let ref = target ? get(data, target) : data;
@@ -410,6 +491,14 @@ export function composeToken(token: SourceToken): any {
     return data;
 }
 
+/**
+ * Parses the given FRON string into a well-constructed token or token tree.
+ * @param filename When parsing data from a file, given that filename to the 
+ *  parser, so that if the parser throws syntax error, it could address the 
+ *  position properly. The default value is `<anonymous>`.
+ * @param listener If set, it will be called when parsing every token in the 
+ *  FRON string, and be helpful for programmatic usage.
+ */
 export function parseToken(
     str: string,
     filename?: string,
@@ -423,6 +512,12 @@ export function parseToken(
     }, listener);
 }
 
+/**
+ * Parses the given FRON string into a JavaScript object directly.
+ * @param filename When parsing data from a file, given that filename to the 
+ *  parser, so that if the parser throws syntax error, it could address the 
+ *  position properly. The default value is `<anonymous>`.
+ */
 export function parse(str: string, filename?: string) {
     return composeToken(parseToken(str, filename));
 }

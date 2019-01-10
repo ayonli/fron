@@ -228,7 +228,12 @@ async function doParseToken(
                             if (!parent && token.type === "Reference") {
                                 throwSyntaxError(token);
                             } else {
-                                token.data = await doParseToken(str, token, cursor, listener);
+                                token.data = await doParseToken(
+                                    str,
+                                    token,
+                                    cursor,
+                                    listener
+                                );
 
                                 // since the token of personalized type will 
                                 // contain an extra closing bracket ")", and 

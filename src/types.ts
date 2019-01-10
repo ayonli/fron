@@ -9,7 +9,7 @@ export const Variable = /^[a-z_][a-z0-9_]*$/i;
 /** 
  * Stores all supported mixed types, includes the types that user registered.
  */
-export const MixedTypes: { [type: string]: Function } = {};
+export const MixedTypes: { [type: string]: Function } = { Object, Array };
 
 /**
  * Gets the type name in string of the input data, may return a primitive type 
@@ -34,7 +34,7 @@ export function getType(data: any): string {
             }
         }
 
-        return type == "object" ? MixedTypes.Object.name : type;
+        return isObj ? MixedTypes.Object.name : type;
     }
 }
 
@@ -67,6 +67,13 @@ export class FRONEntryBase implements FRONEntry<any> {
         return data;
     }
 }
+
+/**
+ * A special type used to mark up user defined FRON notations, if a `toFRON()`
+ * method return a `FRONString`, them it will not be stringified again with
+ * common approach, just use the represented value as the output notation.
+ */
+export class FRONString extends String { }
 
 /** Checks if the given prototype can be registered as an FRON type. */
 function checkProto(name: string, proto: FRONEntry<any>) {
@@ -160,32 +167,20 @@ register(Date.name, {
     }
 });
 
-// Register handler for Object (only for FRON string to support object literal 
-// wrapped by Object).
-register(Object.name, {
-    toFRON(this: object) {
-        return this;
-    },
-    fromFRON(data: object) {
-        return data;
-    }
-});
-
 // Register handler for RegExp.
 register(RegExp.name, {
     toFRON(this: RegExp) {
-        return this.toString();
+        return new FRONString(this.toString());
     },
     fromFRON(data: { source: string, flags: string }) {
         // For FRON string to support object wrapped by RegExp, and literal is 
-        // internally parsed by the parser.
+        // internally support by the parser.
         return new RegExp(data.source, data.flags);
     }
 });
 
-// Register handlers for Array, Buffer, Map and Set (Array handler only for 
-// FRON string to support array literal wrapped by Array).
-[Array, Buffer, Map, Set].forEach(type => {
+// Register handlers for Buffer, Map and Set.
+[Buffer, Map, Set].forEach(type => {
     register(type.name, {
         toFRON(this: Iterable<any>) {
             return getValues(this);

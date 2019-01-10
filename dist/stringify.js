@@ -84,7 +84,12 @@ function getHandler(type, indent, originalIndent, path, refMap) {
             else {
                 data = Object.assign({}, data);
             }
-            return type + "(" + stringifyCommon(data, indent, originalIndent, path, refMap) + ")";
+            if (data instanceof types_1.FRONString) {
+                return data.valueOf();
+            }
+            else {
+                return type + "(" + stringifyCommon(data, indent, originalIndent, path, refMap) + ")";
+            }
         };
     }
 }

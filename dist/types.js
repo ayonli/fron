@@ -5,7 +5,7 @@ const omit = require("lodash/omit");
 const upperFirst = require("lodash/upperFirst");
 const assert_1 = require("assert");
 exports.Variable = /^[a-z_][a-z0-9_]*$/i;
-exports.MixedTypes = {};
+exports.MixedTypes = { Object, Array };
 function getType(data) {
     if (data === undefined) {
         return;
@@ -23,7 +23,7 @@ function getType(data) {
                 return type;
             }
         }
-        return type == "object" ? exports.MixedTypes.Object.name : type;
+        return isObj ? exports.MixedTypes.Object.name : type;
     }
 }
 exports.getType = getType;
@@ -41,6 +41,9 @@ class FRONEntryBase {
     }
 }
 exports.FRONEntryBase = FRONEntryBase;
+class FRONString extends String {
+}
+exports.FRONString = FRONString;
 function checkProto(name, proto) {
     if (typeof proto.fromFRON !== "function") {
         throw new TypeError(`prototype method ${name}.fromFRON() is missing`);
@@ -95,23 +98,15 @@ register(Date.name, {
         return new Date(data);
     }
 });
-register(Object.name, {
-    toFRON() {
-        return this;
-    },
-    fromFRON(data) {
-        return data;
-    }
-});
 register(RegExp.name, {
     toFRON() {
-        return this.toString();
+        return new FRONString(this.toString());
     },
     fromFRON(data) {
         return new RegExp(data.source, data.flags);
     }
 });
-[Array, Buffer, Map, Set].forEach(type => {
+[Buffer, Map, Set].forEach(type => {
     register(type.name, {
         toFRON() {
             return getValues(this);

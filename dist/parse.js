@@ -91,8 +91,17 @@ function doParseToken(str, parent, cursor, listener) {
                     throwSyntaxError(token);
                 }
                 break loop;
-            case "]":
+            case "{":
+            case "[":
+                let isArray = char === "[";
+                cursor.index++;
+                cursor.column++;
+                token.type = isArray ? "Array" : "Object";
+                token.data = isArray ? [] : {};
+                doParseToken(str, token, cursor, listener);
+                break loop;
             case "}":
+            case "]":
                 if (parent) {
                     cursor.index++;
                     cursor.column++;
@@ -101,15 +110,6 @@ function doParseToken(str, parent, cursor, listener) {
                     throwSyntaxError(token);
                 }
                 return;
-            case "[":
-            case "{":
-                let isArray = char === "[";
-                cursor.index++;
-                cursor.column++;
-                token.type = isArray ? "Array" : "Object";
-                token.data = isArray ? [] : {};
-                doParseToken(str, token, cursor, listener);
-                break loop;
             case "'":
             case '"':
             case "`":
@@ -120,7 +120,7 @@ function doParseToken(str, parent, cursor, listener) {
                     cursor.index += dataToken.length;
                     cursor.line += lines.length - 1;
                     if (lines.length > 1) {
-                        cursor.column = last(lines).length;
+                        cursor.column = last(lines).length + 1;
                     }
                     else {
                         cursor.column += dataToken.length;
@@ -146,7 +146,7 @@ function doParseToken(str, parent, cursor, listener) {
                         let lines = dataToken.source.split("\n");
                         cursor.line += lines.length - 1;
                         if (lines.length > 1) {
-                            cursor.column = last(lines).length;
+                            cursor.column = last(lines).length + 1;
                         }
                         else {
                             cursor.column += dataToken.length;
@@ -190,7 +190,7 @@ function doParseToken(str, parent, cursor, listener) {
                         cursor.index += key.length;
                         cursor.line += lines.length - 1;
                         if (lines.length > 1) {
-                            cursor.column = last(lines).length;
+                            cursor.column = 1;
                         }
                         else {
                             cursor.column += key.length;
@@ -224,19 +224,17 @@ function doParseToken(str, parent, cursor, listener) {
         }
     }
     token.position.end = pick(cursor, ["line", "column"]);
-    if (token.parent) {
-        if (token.parent.type === "Object") {
-            let prop = token.data, isVar = types_1.Variable.test(prop), prefix = get(token, "parent.parent.path", ""), path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
-            token.path = (prefix || "") + path;
-            token.type = "property";
-            token.data = doParseToken(str, token, cursor, listener);
-            token.parent.data[prop] = token;
-        }
-        else if (token.parent.type === "Array") {
-            let prefix = get(token, "parent.path", "");
-            token.path = `${prefix}[${token.parent.data.length}]`;
-            token.parent.data.push(token);
-        }
+    if (token.parent && token.parent.type === "Object") {
+        let prop = token.data, isVar = types_1.Variable.test(prop), prefix = get(token, "parent.parent.path", ""), path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
+        token.path = (prefix || "") + path;
+        token.type = "property";
+        token.data = doParseToken(str, token, cursor, listener);
+        token.parent.data[prop] = token;
+    }
+    else if (token.parent && token.parent.type === "Array") {
+        let prefix = get(token, "parent.path", "");
+        token.path = `${prefix}[${token.parent.data.length}]`;
+        token.parent.data.push(token);
     }
     listener && listener.call(void 0, token);
     if (token.parent && ["Object", "Array"].indexOf(token.parent.type) >= 0) {
