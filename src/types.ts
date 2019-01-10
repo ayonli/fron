@@ -12,15 +12,6 @@ export const Variable = /^[a-z_][a-z0-9_]*$/i;
 export const MixedTypes: { [type: string]: Function } = {};
 
 /**
- * The interface that restricts which a user defined type can be registered as 
- * FRON type.
- */
-export interface FRONEntry<T> {
-    toFRON: () => any,
-    fromFRON: (data: any) => T
-};
-
-/**
  * Gets the type name in string of the input data, may return a primitive type 
  * or a mixed type. If the type list doesn't contain the input type, returns 
  * `Object` instead.
@@ -53,12 +44,29 @@ export function isMixed(type: string) {
 }
 
 /**
- * Indicates an unknown type, when register an type that is not a constructor,
- * but an object match the `FRONEntry` interface, a new anonymous sub-class of 
- * `Unknown` will be defined and merge the provided object as prototype to store
- * the type.
+ * The interface that restricts which a user defined type can be registered as 
+ * FRON type.
  */
-class Unknown { }
+export interface FRONEntry<T> {
+    toFRON(): any,
+    fromFRON(data: any): T
+};
+
+/**
+ * When register a type with an object as its prototype, a new sub-class will 
+ * be created to extend FRONEntryBase and merge the object to its prototype. In 
+ * the parsing phase, a FRONEntryBase instance will be created via 
+ * `Object.create()` and apply to the `fromFRON()` method.
+ */
+export class FRONEntryBase implements FRONEntry<any> {
+    toFRON() {
+        return this;
+    }
+
+    fromFRON(data: any) {
+        return data;
+    }
+}
 
 /** Checks if the given prototype can be registered as an FRON type. */
 function checkProto(name: string, proto: FRONEntry<any>) {
@@ -120,7 +128,7 @@ export function register(
             let ctor: Function = proto.constructor;
 
             if (ctor === Object)
-                ctor = class extends Unknown { };
+                ctor = class extends FRONEntryBase { };
 
             Object.assign(ctor.prototype, proto);
             MixedTypes[type] = ctor;
@@ -160,6 +168,18 @@ register(Object.name, {
     },
     fromFRON(data: object) {
         return data;
+    }
+});
+
+// Register handler for RegExp.
+register(RegExp.name, {
+    toFRON(this: RegExp) {
+        return this.toString();
+    },
+    fromFRON(data: { source: string, flags: string }) {
+        // For FRON string to support object wrapped by RegExp, and literal is 
+        // internally parsed by the parser.
+        return new RegExp(data.source, data.flags);
     }
 });
 

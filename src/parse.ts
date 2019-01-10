@@ -13,8 +13,23 @@ import {
     keyword
 } from 'literal-toolkit';
 
+/** A pattern to match Latin properties or type notations. */
+export const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
+
+/**
+ * The interface that carries token details in the FRON string (source), e.g.
+ * `filename`, `position`, `type` etc.
+ */
 export interface SourceToken {
+    /**
+     * The filename that parsed to the parser, if no filename is parsed, the 
+     * default value will be `<anonymous>`.
+     */
     filename: string;
+    /**
+     * The appearing position of the current token, includes both start and end 
+     * positions.
+     */
     position: {
         start: {
             line: number,
@@ -25,18 +40,33 @@ export interface SourceToken {
             column: number
         };
     };
+    /**
+     * The type of the current token, literal types are lower-cased and mixed 
+     * types are upper-cased.
+     */
     type: string;
+    /**
+     * The parsed data of the current token, it may not be the final data since
+     * there may be a handler to deal with the current type.
+     */
     data: any;
+    /** The token of the parent node. */
     parent?: SourceToken;
+    /** The path of the current token, only for object properties. */
     path?: string;
 }
 
+/**
+ * SourceToken is a class constructor as well, it is used to distinguish 
+ * the token object from all objects.
+ */
 export class SourceToken implements SourceToken {
     constructor(token: SourceToken) {
         Object.assign(this, token);
     }
 }
 
+/** Carries details of the current position of the parsing cursor. */
 export interface CursorToken {
     index: number;
     line: number;
@@ -44,8 +74,10 @@ export interface CursorToken {
     filename: string;
 }
 
-export const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
-
+/**
+ * Throws syntax error when the current token is invalid and terminate the 
+ * parser immediately.
+ */
 export function throwSyntaxError(token: SourceToken) {
     let filename = token.filename,
         type = token.type ? token.type + " token" : "token",
@@ -53,14 +85,23 @@ export function throwSyntaxError(token: SourceToken) {
     throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
 }
 
+/**
+ * Gets the customized handler of the given type for parsing, may return 
+ * undefined if no handler is registered.
+ */
 export function getHandler(type: string): (data: any) => any {
     return get(MixedTypes[type], "prototype.fromFRON");
 }
 
+/**
+ * Gets an instance of the given type, may return undefined if the type isn't 
+ * registered.
+ */
 export function getInstance(type: string): any {
     return MixedTypes[type] ? Object.create(MixedTypes[type].prototype) : void 0;
 }
 
+/** Parses every token in the FRON string. */
 function doParseToken(
     str: string,
     parent: SourceToken,

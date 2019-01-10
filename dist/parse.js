@@ -7,13 +7,13 @@ const get = require("lodash/get");
 const set = require("lodash/set");
 const types_1 = require("./types");
 const literal_toolkit_1 = require("literal-toolkit");
+exports.TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
 class SourceToken {
     constructor(token) {
         Object.assign(this, token);
     }
 }
 exports.SourceToken = SourceToken;
-exports.TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
 function throwSyntaxError(token) {
     let filename = token.filename, type = token.type ? token.type + " token" : "token", { line, column } = token.position.start;
     throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);

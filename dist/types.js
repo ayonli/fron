@@ -6,7 +6,6 @@ const upperFirst = require("lodash/upperFirst");
 const assert_1 = require("assert");
 exports.Variable = /^[a-z_][a-z0-9_]*$/i;
 exports.MixedTypes = {};
-;
 function getType(data) {
     if (data === undefined) {
         return;
@@ -32,8 +31,16 @@ function isMixed(type) {
     return !!exports.MixedTypes[type];
 }
 exports.isMixed = isMixed;
-class Unknown {
+;
+class FRONEntryBase {
+    toFRON() {
+        return this;
+    }
+    fromFRON(data) {
+        return data;
+    }
 }
+exports.FRONEntryBase = FRONEntryBase;
 function checkProto(name, proto) {
     if (typeof proto.fromFRON !== "function") {
         throw new TypeError(`prototype method ${name}.fromFRON() is missing`);
@@ -62,7 +69,7 @@ function register(type, proto) {
             checkProto(type, proto);
             let ctor = proto.constructor;
             if (ctor === Object)
-                ctor = class extends Unknown {
+                ctor = class extends FRONEntryBase {
                 };
             Object.assign(ctor.prototype, proto);
             exports.MixedTypes[type] = ctor;
@@ -94,6 +101,14 @@ register(Object.name, {
     },
     fromFRON(data) {
         return data;
+    }
+});
+register(RegExp.name, {
+    toFRON() {
+        return this.toString();
+    },
+    fromFRON(data) {
+        return new RegExp(data.source, data.flags);
     }
 });
 [Array, Buffer, Map, Set].forEach(type => {
