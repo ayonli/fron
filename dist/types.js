@@ -215,6 +215,6 @@ register(RegExp, {
 if (exports.IsNode) {
     let AssertionError = require("assert").AssertionError;
     register(AssertionError, Error.name);
-    register(Buffer.name, Uint8Array.name);
+    register(Buffer, Uint8Array.name);
 }
 //# sourceMappingURL=types.js.map

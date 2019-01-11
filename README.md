@@ -270,7 +270,7 @@ FRON.register(Buffer, "Uint8Array");
 
 Since Buffer is a constructor, the parser can use it to create expected instance.
 
-For more programmatic APIs, please check [api.md](./api.md).
+For more programmatic APIs, please check [API Reference](./api.md).
 
 ## TIP
 
