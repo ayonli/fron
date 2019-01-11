@@ -20,6 +20,7 @@ exports.User = User;
 register(User);
 
 register("ISODate", "Date");
+register("Buffer", "Uint8Array")
 
 var data = {
     "hello world!": "Hello,\tWorld!",
@@ -37,7 +38,7 @@ var data = {
     nul: null,
     symbol: Symbol.for("hello"),
     fn: () => { },
-    buf: Uint8Array.from(Buffer.from("hello, world!")),
+    buf: Buffer.from("hello, world!"),
     obj: { hello: "world!" },
     arr: [],
     obj2: {},

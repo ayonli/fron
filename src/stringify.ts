@@ -159,7 +159,7 @@ function getHandler(
  * @param pretty The default indentation is two spaces, other than that, set 
  *  any strings for indentation is allowed.
  */
-export function stringify(data: any, pretty?: boolean | string) {
+export function stringify(data: any, pretty?: boolean | string): string {
     let indent = "";
 
     if (pretty) {

@@ -51,13 +51,16 @@ export interface SourceToken {
     data: any;
     /** The token of the parent node. */
     parent?: SourceToken;
-    /** The path of the current token, only for object properties. */
+    /**
+     * The path of the current token, only for object properties and array 
+     * elements.
+     */
     path?: string;
     /**
      * All the comments in the current token. When parsing a comment token, it 
      * will be appended to the closest parent node, unless the comment is the 
-     * first token. Comments are not important to the parser and will be skipped
-     * when composing data.
+     * very first token. Comments are not important to the parser and will be 
+     * skipped when composing data.
      */
     comments?: SourceToken[];
 }
@@ -517,7 +520,7 @@ export function parseToken(
     str: string,
     filename?: string,
     listener?: (token: SourceToken) => void
-) {
+): SourceToken {
     return str ? doParseToken(str, null, {
         index: 0,
         line: 1,
@@ -527,11 +530,11 @@ export function parseToken(
 }
 
 /**
- * Parses the given FRON string into a JavaScript object directly.
+ * Parses the given FRON string to JavaScript object.
  * @param filename When parsing data from a file, given that filename to the 
  *  parser, so that if the parser throws syntax error, it could address the 
  *  position properly. The default value is `<anonymous>`.
  */
-export function parse(str: string, filename?: string) {
+export function parse(str: string, filename?: string): any {
     return str ? composeToken(parseToken(str, filename)) : void 0;
 }

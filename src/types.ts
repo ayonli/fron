@@ -8,8 +8,8 @@ import upperFirst = require("lodash/upperFirst");
  * FRON type.
  */
 export interface FRONEntry<T> {
-    toFRON(): any,
-    fromFRON(data: any, type: string): T
+    toFRON(): any;
+    fromFRON(data: any, type: string): T;
 };
 
 /** Indicates a class constructor that implements the FRONEntry interface. */
@@ -78,7 +78,7 @@ export function getInstance<T = any>(type: string | FRONConstructor<T>): T {
  * When register a type with an object as its prototype, a new sub-class will 
  * be created to extend FRONEntryBase and merge the object to its prototype. In 
  * the parsing phase, a FRONEntryBase instance will be created via 
- * `Object.create()` and apply to the `fromFRON()` method.
+ * `Object.create()` and apply the `fromFRON()` method to it.
  */
 export class FRONEntryBase implements FRONEntry<any> {
     toFRON() {
@@ -148,7 +148,8 @@ function copyProto(source: object | FRONConstructor<any>, target: Function) {
 }
 
 /**
- * Registers a personalized type as FRON type.
+ * Registers a customized data type so that the stringifier and parser can 
+ * identify it.
  * @example
  *  // Register a constructor with `toFRON` and `fromFRON` methods.
  *  register(User);
@@ -172,7 +173,7 @@ function copyProto(source: object | FRONConstructor<any>, target: Function) {
 export function register<T = any>(
     type: string | FRONConstructor<T> | (new (...args: any[]) => any),
     proto?: string | FRONConstructor<T> | FRONEntry<T>
-) {
+): void {
     if (typeof type === "function") {
         if (!proto) {
             checkProto(type.name, type.prototype);
@@ -278,7 +279,7 @@ register(RegExp, {
             return getValues(this);
         },
         fromFRON(data: number[]) {
-            return type.from(data);
+            return this.constructor.from(data);
         }
     });
 });

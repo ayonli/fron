@@ -83,13 +83,14 @@ multiple
 lines
 */
 
+/************************ Compound Types *************************/
+
+// Techniquely, Object and Array are compound types.
 // Object
 { hello: "world", "key with quotes": 12345 }
 
 // Array
 ["Hello", "World!"]
-
-/************************ Compound Types *************************/
 
 // Date
 Date("2018-12-10T03:21:29.015Z")
@@ -126,28 +127,30 @@ Uint32Array([1, 2, 3, 4])
 
 ## API
 
-### Stringify
+### Stringifier
 
 ```typescript
-FRON.stringify(data: any, pretty?: boolean | string): string
+function stringify(data: any, pretty?: boolean | string): string
 ```
 
 Serializes the given `data` to a FRON string. The optional `pretty` argument is 
 for generating well-formatted outlook, if set `true`, then use default indent 
 with two spaces, otherwise set a customized string of spaces for preferred 
 indentation. By default, stringified data will not contain any meaningless 
-spaces, however when `pretty` is set, the result string will be well-structed 
+spaces, however when `pretty` is set, the result string will be well-constructed
 with additional spaces.
 
-### Parse
+### Parser
 
 ```typescript
-FRON.parse(data: string): any
+function parse(data: string, filename?: string): any
 ```
 
-Parses the serialized FRON string to JavaScript object. By default, if meets 
+Parses the given FRON string to JavaScript object. By default, if meets 
 unknown types, the parser will ignore the type notation and parse the data 
-according to the closest type.
+according to the closest type. When parsing data from a file, given the 
+`filename` to the  parser, so that if the parser throws syntax error, it could 
+address the position properly. The default value is `<anonymous>`.
 
 #### Example of Unknown Type
 
@@ -171,16 +174,39 @@ console.log(data);
 ### Register
 
 ```typescript
-FRON.register<T>(
+function register<T>(
     type: string | FRONConstructor<T> | (new (...args: any[]) => any),
     proto?: string | FRONConstructor<T> | FRONEntry<T>
-)
+): void
 ```
 
 Registers a customized data type so that the stringifier and parser can identify
 it.
 
-#### Example of Register Type
+#### Examples
+
+```typescript
+// Register a constructor with `toFRON` and `fromFRON` methods.
+register(User);
+
+// Register a constructor and merger a customized prototype.
+register(Date, { toFRON() { ... }, fromFRON() { ... } });
+
+// Register a non-constructor type with a customized prototype.
+register("Article", { toFRON() { ... }, fromFRON() { ... } });
+
+// Four ways to register an alias type.
+// NOTE: the former two will use the constructor `Student`
+// to create instance when parsing, but the last two will
+// use `User` since "Student" is not a constructor. However,
+// they all use the name "Student" as notation.
+register(Student, User);
+register(Student, "User");
+register("Student", User);
+register("Student", "User");
+```
+
+#### Example of Type Exception
 
 ```typescript
 class Exception {
@@ -197,8 +223,6 @@ class Exception {
 }
 
 FRON.register(Exception);
-// is equivalent to
-FROM.register(Exception.name, Exception.prototype);
 
 // now the previous FRON string can be parsed correctly
 var fronStr = `
@@ -223,15 +247,34 @@ only indicates type `Exception` contains data
 `{ code: 1001, message: "something went wrong" }`, it doesn't mean that the
 constructor takes the data as its argument.
 
-The third signature `FRON.register<T>(type: string, aliasOf: string)` allows the
-user assigning a new type as alias to an existing type, this is very useful when
-a different implementation uses a different name of type that based on that 
-platform but can be handled with an existing approach. Typically, `Buffer` 
-is considered as an alias of `Uint8Array` in NodeJS.
+The function allows the user assigning a new type as alias to an existing type, 
+this is very useful when a different implementation uses a different name of 
+type that based on that platform but can be handled with an existing approach. 
+Typically, `Buffer` is compatible with `Uint8Array` in NodeJS.
 
-```javascript
-// You don't have to do this, the toolkit already done that.
-FRON.register("Buffer", "Unit8Array");
+```typescript
+FRON.register("Buffer", "Uint8Array");
 ```
 
+Now NodeJS applications can transfer buffers into FRON notations and the browser
+can parse `Buffer` notations into `Uint8Array`s.
+
+However when parse the data in NodeJS, the data will be parsed as Uint8Array as 
+well, instead of Buffer as expected. So it's better to using the following 
+register method for NodeJS.
+
+```typescript
+// You don't actually have to do this, the toolkit have already done it.
+FRON.register(Buffer, "Uint8Array");
+```
+
+Since Buffer is a constructor, the parser can use it to create expected instance.
+
 For more programmatic APIs, please check [api.md](./api.md).
+
+## TIP
+
+Although FRON is way more feature-rich than JSON, however, this implementation 
+is written in TypeScript/JavaScript, which is much more slower than the native 
+JSON support in parsing phase, when using it, you have to be very careful for 
+the scenarios you meet.

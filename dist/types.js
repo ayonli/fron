@@ -183,7 +183,7 @@ register(RegExp, {
             return getValues(this);
         },
         fromFRON(data) {
-            return type.from(data);
+            return this.constructor.from(data);
         }
     });
 });
@@ -215,6 +215,6 @@ register(RegExp, {
 if (exports.IsNode) {
     let AssertionError = require("assert").AssertionError;
     register(AssertionError, Error.name);
-    register(Buffer, Uint8Array.name);
+    register(Buffer.name, Uint8Array.name);
 }
 //# sourceMappingURL=types.js.map
