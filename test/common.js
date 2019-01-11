@@ -19,6 +19,8 @@ exports.User = User;
 
 register(User);
 
+register("ISODate", "Date");
+
 var data = {
     "hello world!": "Hello,\tWorld!",
     12: 12,
@@ -35,11 +37,11 @@ var data = {
     nul: null,
     symbol: Symbol.for("hello"),
     fn: () => { },
-    buf: Buffer.from("hello, world!"),
+    buf: Uint8Array.from(Buffer.from("hello, world!")),
     obj: { hello: "world!" },
     arr: [],
     obj2: {},
-    user: new User("Ayon Lee", 23),
+    // user: new User("Ayon Lee", 23),
     obj3: {
         toFRON() {
             return { name: "Ayonium" }
@@ -47,13 +49,13 @@ var data = {
     }
 };
 
-data["obj2"] = data;
-data.obj["ha"] = {};
-data.obj["ha"]["ha"] = data;
-data.obj["ha ha"] = data.obj;
-data.obj["ha ha ha"] = {};
-data.obj["ha ha ha"]["depth"] = {
-    cir: data.obj["ha ha ha"]
-};
+// data["obj2"] = data;
+// data.obj["ha"] = {};
+// data.obj["ha"]["ha"] = data;
+// data.obj["ha ha"] = data.obj;
+// data.obj["ha ha ha"] = {};
+// data.obj["ha ha ha"]["depth"] = {
+//     cir: data.obj["ha ha ha"]
+// };
 
 exports.data = data;

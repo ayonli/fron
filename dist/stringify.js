@@ -18,7 +18,7 @@ function stringifyCommon(data, indent, originalIndent, path, refMap) {
         let key = Symbol.keyFor(data);
         return key === undefined ? key : "Symbol(" + stringify(key) + ")";
     }
-    else if (types_1.isMixed(type)) {
+    else if (types_1.isCompound(type)) {
         if (refMap.has(data)) {
             return "Reference(" + stringify(refMap.get(data)) + ")";
         }
@@ -77,7 +77,7 @@ function getHandler(type, indent, originalIndent, path, refMap) {
     }
     else {
         return (data) => {
-            let handler = get(types_1.MixedTypes[type], "prototype.toFRON");
+            let handler = get(types_1.CompoundTypes[type], "prototype.toFRON");
             if (handler) {
                 data = handler.apply(data);
             }

@@ -1,19 +1,45 @@
 import pick = require("lodash/pick");
 import omit = require("lodash/omit");
+import get = require("lodash/get");
 import upperFirst = require("lodash/upperFirst");
-import { AssertionError } from "assert";
+
+/**
+ * The interface that restricts which a user defined type can be registered as 
+ * FRON type.
+ */
+export interface FRONEntry<T> {
+    toFRON(): any,
+    fromFRON(data: any, type: string): T
+};
+
+/** Indicates a class constructor that implements the FRONEntry interface. */
+export type FRONConstructor<T> = new (...args: any[]) => FRONEntry<T>;
+
+/** Whether the current environment is NodeJS. */
+export const IsNode = typeof global === "object"
+    && get(global, "process.release.name") === "node";
 
 /** The pattern that matches valid JavaScript Latin variable names. */
 export const Variable = /^[a-z_][a-z0-9_]*$/i;
 
 /** 
- * Stores all supported mixed types, includes the types that user registered.
+ * Stores all supported compound types, includes the types that user registered.
  */
-export const MixedTypes: { [type: string]: Function } = { Object, Array };
+export const CompoundTypes: { [type: string]: FRONConstructor<any> } = {
+    // objects and arrays are handled internally by the stringifier and parser,
+    // register here is for checkers to identify them as compound types.
+    Object: <any>Object,
+    Array: <any>Object
+};
+
+/** Checks if the given type is an registered compound type. */
+export function isCompound(type: string) {
+    return !!CompoundTypes[type];
+}
 
 /**
  * Gets the type name in string of the input data, may return a primitive type 
- * or a mixed type. If the type list doesn't contain the input type, returns 
+ * or a compound type. If the type list doesn't contain the input type, returns 
  * `Object` instead.
  */
 export function getType(data: any): string {
@@ -26,7 +52,7 @@ export function getType(data: any): string {
             Type = upperFirst(type),
             isObj = type == "object";
 
-        for (let x in MixedTypes) {
+        for (let x in CompoundTypes) {
             if (isObj && data.constructor.name === x) {
                 return x;
             } else if (!isObj && x === Type) { // type alias
@@ -34,23 +60,19 @@ export function getType(data: any): string {
             }
         }
 
-        return isObj ? MixedTypes.Object.name : type;
+        return isObj ? CompoundTypes.Object.name : type;
     }
 }
 
-/** Checks if the given type is an registered mixed type. */
-export function isMixed(type: string) {
-    return !!MixedTypes[type];
-}
-
 /**
- * The interface that restricts which a user defined type can be registered as 
- * FRON type.
+ * Gets an instance of the given type, may return undefined if the type isn't 
+ * registered, this function calls `Object.create()` to create instance, so the
+ * constructor will not be called automatically.
  */
-export interface FRONEntry<T> {
-    toFRON(): any,
-    fromFRON(data: any): T
-};
+export function getInstance<T = any>(type: string | FRONConstructor<T>): T {
+    type = typeof type === "function" ? type.name : type;
+    return CompoundTypes[type] && Object.create(CompoundTypes[type].prototype);
+}
 
 /**
  * When register a type with an object as its prototype, a new sub-class will 
@@ -72,6 +94,8 @@ export class FRONEntryBase implements FRONEntry<any> {
  * A special type used to mark up user defined FRON notations, if a `toFRON()`
  * method return a `FRONString`, them it will not be stringified again with
  * common approach, just use the represented value as the output notation.
+ * NOTE: the personalized notation must use valid syntax that can be identified 
+ * by the parser, it is either a literal, or a compound type.
  */
 export class FRONString extends String { }
 
@@ -92,6 +116,14 @@ function checkProto(name: string, proto: FRONEntry<any>) {
     }
 }
 
+/** Tests if a type is registered. */
+function testCompound(type: string | FRONConstructor<any>) {
+    type = typeof type === "string" ? type : type.name;
+    if (!isCompound(type)) {
+        throw new ReferenceError(`Unrecognized type: ${type}`);
+    }
+}
+
 /** Gets the values in the given iterable object. */
 function getValues<T>(data: Iterable<T>): T[] {
     let arr = [];
@@ -104,42 +136,83 @@ function getValues<T>(data: Iterable<T>): T[] {
 }
 
 /**
- * Registers the given `type` as FRON type with an object as prototype that 
- * matches the `FRONEntry` interface.
+ * Copies the FRONEntry protocol methods from a FRONConstructor to another 
+ * constructor.
  */
-export function register<T>(type: string, proto: FRONEntry<T>): void;
-
-/** Registers the given `type` which is a constructor as FRON type. */
-export function register<T>(type: new (...args: any[]) => FRONEntry<T>): void;
+function copyProto(source: object | FRONConstructor<any>, target: Function) {
+    source = typeof source === "function" ? source.prototype : source;
+    Object.assign(target.prototype, pick(source, [
+        "toFRON",
+        "fromFRON"
+    ]));
+}
 
 /**
- * Registers a type as alias to an existing type, so that the stringifier or 
- * parser could use an existing approach to deal with that type. However the 
- * stringifier should use the alias name as notation, so that when parsing it 
- * will be identified as an individual type.
+ * Registers a personalized type as FRON type.
+ * @example
+ *  // Register a constructor with `toFRON` and `fromFRON` methods.
+ *  register(User);
+ * 
+ *  // Register a constructor and merger a customized prototype.
+ *  register(Date, { toFRON() { ... }, fromFRON() { ... } });
+ * 
+ *  // Register a non-constructor type with a customized prototype.
+ *  register("Article", { toFRON() { ... }, fromFRON() { ... } });
+ * 
+ *  // Four ways to register an alias type.
+ *  // NOTE: the former two will use the constructor `Student`
+ *  // to create instance when parsing, but the last two will
+ *  // use `User` since "Student" is not a constructor. However,
+ *  // they all use the name "Student" as notation.
+ *  register(Student, User);
+ *  register(Student, "User");
+ *  register("Student", User);
+ *  register("Student", "User");
  */
-export function register(type: string, asAlias: string): void;
-
-export function register(
-    type: string | (new (...args: any[]) => FRONEntry<any>),
-    proto?: string | FRONEntry<any>
+export function register<T = any>(
+    type: string | FRONConstructor<T> | (new (...args: any[]) => any),
+    proto?: string | FRONConstructor<T> | FRONEntry<T>
 ) {
     if (typeof type === "function") {
-        checkProto(type.name, type.prototype);
-        MixedTypes[type.name] = type;
-    } else {
-        if (typeof proto === "string") {
-            MixedTypes[type] = MixedTypes[proto];
+        if (!proto) {
+            checkProto(type.name, type.prototype);
+            CompoundTypes[type.name] = type;
+        } else if (typeof proto === "string") {
+            testCompound(proto);
+            copyProto(CompoundTypes[proto], type);
+            CompoundTypes[type.name] = type;
+        } else if (typeof proto === "function") {
+            testCompound(proto);
+            copyProto(proto, type);
+            CompoundTypes[type.name] = type;
+        } else if (typeof proto === "object") {
+            checkProto(type.name, proto);
+            copyProto(proto, type);
+            CompoundTypes[type.name] = type;
         } else {
+            throw new Error(`Invalid prototype: ${proto}`);
+        }
+    } else if (typeof type === "string") {
+        if (typeof proto === "string") {
+            testCompound(proto);
+            CompoundTypes[type] = CompoundTypes[proto];
+        } else if (typeof proto === "function") {
+            checkProto(proto.name, proto.prototype);
+            CompoundTypes[type] = proto;
+        } else if (typeof proto === "object") {
             checkProto(type, proto);
             let ctor: Function = proto.constructor;
 
             if (ctor === Object)
                 ctor = class extends FRONEntryBase { };
 
-            Object.assign(ctor.prototype, proto);
-            MixedTypes[type] = ctor;
+            copyProto(proto, ctor);
+            CompoundTypes[type] = <any>ctor;
+        } else {
+            throw new Error(`Invalid prototype: ${proto}`);
         }
+    } else {
+        throw new TypeError(`Invalid type: ${type}`);
     }
 }
 
@@ -158,7 +231,7 @@ export function register(
 });
 
 // Register handler for Date.
-register(Date.name, {
+register(Date, {
     toFRON(this: Date) {
         return this.toISOString();
     },
@@ -168,7 +241,7 @@ register(Date.name, {
 });
 
 // Register handler for RegExp.
-register(RegExp.name, {
+register(RegExp, {
     toFRON(this: RegExp) {
         return new FRONString(this.toString());
     },
@@ -179,21 +252,39 @@ register(RegExp.name, {
     }
 });
 
-// Register handlers for Buffer, Map and Set.
-[Buffer, Map, Set].forEach(type => {
-    register(type.name, {
+// Register handlers for Map and Set.
+[Map, Set].forEach(type => {
+    register(type, {
         toFRON(this: Iterable<any>) {
             return getValues(this);
         },
         fromFRON(data: any[]) {
-            return type === Buffer ? Buffer.from(data) : new (<any>type)(data);
+            return new (<any>type)(data);
+        }
+    });
+});
+
+// Register handlers for typed arrays.
+[
+    Int8Array,
+    Int16Array,
+    Int16Array,
+    Uint8Array,
+    Uint16Array,
+    Uint32Array
+].forEach(type => {
+    register(type, {
+        toFRON(this: Iterable<number>) {
+            return getValues(this);
+        },
+        fromFRON(data: number[]) {
+            return type.from(data);
         }
     });
 });
 
 // Register handlers for all errors.
 [
-    AssertionError,
     Error,
     EvalError,
     RangeError,
@@ -201,7 +292,7 @@ register(RegExp.name, {
     SyntaxError,
     TypeError
 ].forEach(type => {
-    register(type.name, {
+    register(type, {
         toFRON(this: Error) {
             // When stringify an error, stringify all its member properties,
             // include `name`, `message` and `stack`, since they may not be 
@@ -210,10 +301,8 @@ register(RegExp.name, {
 
             return Object.assign({}, pick(this, reserved), omit(this, reserved));
         },
-        fromFRON(data: { [x: string]: any }): Error {
-            // When parse an error, create a new error instance via 
-            // `Object.create()` and assign property values afterwards.
-            let err: Error = Object.create(type.prototype);
+        fromFRON(data: { [x: string]: any }, type: string): Error {
+            let err: Error = getInstance(type);
 
             Object.defineProperties(err, {
                 name: { value: data.name },
@@ -226,3 +315,10 @@ register(RegExp.name, {
         }
     });
 });
+
+if (IsNode) {
+    // Register some well-known NodeJS types.
+    let AssertionError: FRONConstructor<any> = require("assert").AssertionError;
+    register(AssertionError, Error.name);
+    register(Buffer, Uint8Array.name);
+}

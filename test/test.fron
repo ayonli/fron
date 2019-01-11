@@ -1,72 +1,41 @@
 {
     "12": 12,
     "hello world!": "Hello,\tWorld!",
-    hi: [
+    "hi": [
         "Hello, World!",
         "Hi, FRON"
     ],
-    date: Date("2019-01-10T15:46:32.745Z"),
-    re: /\\[a-z]/i,
-    num: 12345,
-    num2: Number(12345),
-    err: TypeError({
-        name: "TypeError",
-        message: "something went wrong",
-        stack: "TypeError: something went wrong\n    at Object.<anonymous> (/home/hyurl/git/fron/test/common.js:30:24)\n    at Module._compile (internal/modules/cjs/loader.js:722:30)\n    at Object.Module._extensions..js (internal/modules/cjs/loader.js:733:10)\n    at Module.load (internal/modules/cjs/loader.js:620:32)\n    at tryModuleLoad (internal/modules/cjs/loader.js:560:12)\n    at Function.Module._load (internal/modules/cjs/loader.js:552:3)\n    at Module.require (internal/modules/cjs/loader.js:658:17)\n    at require (internal/modules/cjs/helpers.js:22:18)\n    at Object.<anonymous> (/home/hyurl/git/fron/test/stringify.js:1:24)\n    at Module._compile (internal/modules/cjs/loader.js:722:30)",
-        code: 500
-    }),
-    bool: true,
-    bool2: Boolean(false),
-    map: Map([
-        [
-            "a",
-            1
-        ],
-        [
-            "b",
-            2
-        ]
-    ]),
-    set: Set([
-        "a",
-        "b"
-    ]),
-    nul: null,
-    symbol: Symbol("hello"),
-    buf: Buffer([
-        104,
-        101,
-        108,
-        108,
-        111,
-        44,
-        32,
-        119,
-        111,
-        114,
-        108,
-        100,
-        33
-    ]),
-    obj: {
-        hello: "world!",
-        ha: {
-            ha: Reference("")
-        },
-        "ha ha": Reference("obj"),
-        "ha ha ha": {
-            depth: {
-                cir: Reference("obj['ha ha ha']")
-            }
-        }
+    "date": "2019-01-11T07:21:39.765Z",
+    "re": {},
+    "num": 12345,
+    "num2": 12345,
+    "err": {
+        "code": 500
     },
-    arr: [],
-    obj2: Reference(""),
-    user: User({
-        name: "Ayon Lee",
-        age: 23
-    }),
-    obj3: {
-        name: "Ayonium"
-    }
+    "bool": true,
+    "bool2": false,
+    "map": {},
+    "set": {},
+    "nul": null,
+    "buf": {
+        "0": 104,
+        "1": 101,
+        "2": 108,
+        "3": 108,
+        "4": 111,
+        "5": 44,
+        "6": 32,
+        "7": 119,
+        "8": 111,
+        "9": 114,
+        "10": 108,
+        "11": 100,
+        "12": 33
+    },
+    "obj": {
+        "hello": "world!"
+    },
+    "arr": [],
+    "obj2": {},
+    "obj3": {}
 }

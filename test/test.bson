@@ -1,0 +1,110 @@
+{
+    "_id" : "68a71e65dec446a4b3ed953342ea0bd4",
+    "updatedAt" /* ISODate is a MongoDB favor type */ : ISODate("2019-01-11T06:23:47.379Z"),
+    "createdAt" : ISODate("2018-12-27T08:45:13.582Z"),
+    "name" : "8人急速赛",
+    "game" : "glmj",
+    "sceneId" : "glmj",
+    "startTime" : ISODate("2018-03-31T16:00:00.000Z"),
+    "endTime" : ISODate("2019-12-30T15:59:30.000Z"),
+    "type" : 40,
+    "matchRooms" : [ 
+        {
+            "group" : 1,
+            "name" : "8人急速赛",
+            "type" : 80,
+            "timeConfig" : {
+                "startTime" : ISODate("2018-06-21T16:00:00.000Z"),
+                "endTime" : ISODate("2019-12-30T15:59:59.000Z"),
+                "interval" : 1,
+                "duration" : 1,
+                "periods" : [ 
+                    {
+                        "startTime" : ISODate("2018-06-22T01:00:00.000Z"),
+                        "endTime" : ISODate("2018-06-22T14:00:00.000Z"),
+                        "completeTime" : ISODate("2018-06-22T14:05:00.000Z"),
+                        "id" : "0d003f6b7f5f4ec7a783376d4a1a4ae6"
+                    }
+                ]
+            },
+            "entryFee" : {
+                "amount" : 0,
+                "type" : "currency",
+                "id" : "cash"
+            },
+            "firstTimeFree" : false,
+            "matchDetail" : "比赛时间：每天19:00--18:00\n每小时整点开赛\n初始积分：1000\n报名费：首次报名免费，再次进入报名需2000金币\n每场可报名次数：无限制\n比赛流程：\n参与比赛获得比赛积分，根据获得积分进行排名发奖，开赛后30分钟统计排名发奖1次并清零，奖励在每场比赛结束5分钟后发放到邮件",
+            "joinTimes" : 2147483647,
+            "initScore" : 1000,
+            "baseScore" : 100,
+            "eightHongZhong" : 0,
+            "canDianPao" : 0,
+            "canWinQingShui" : 1,
+            "canWinQiDui" : 1,
+            "huangZhuangHuangGang" : 0,
+            "canQiangGangHu" : 1,
+            "cannotDiscardHongZhong" : 1,
+            "bonusType" : "normal",
+            "bonusCount" : 4,
+            "bonusCoef" : 2,
+            "firstRoundPlayers" : 8,
+            "nextRoundPlayers" : 2,
+            "gameDispatchType" : 20,
+            "icon" : {
+                "id" : "cash",
+                "icon" : "http://nnmj.oss-cn-shenzhen.aliyuncs.com/logo/golds.png"
+            },
+            "rankAwards" : [ 
+                {
+                    "attachments" : [ 
+                        {
+                            "amount" : 10000,
+                            "id" : "cash",
+                            "type" : "currency"
+                        }
+                    ],
+                    "bottom" : 1,
+                    "top" : 1
+                }, 
+                {
+                    "attachments" : [ 
+                        {
+                            "amount" : 5000,
+                            "id" : "cash",
+                            "type" : "currency"
+                        }
+                    ],
+                    "bottom" : 2,
+                    "top" : 2
+                }, 
+                {
+                    "attachments" : [ 
+                        {
+                            "amount" : 4000,
+                            "id" : "cash",
+                            "type" : "currency"
+                        }
+                    ],
+                    "bottom" : 3,
+                    "top" : 3
+                }, 
+                {
+                    "attachments" : [ 
+                        {
+                            "amount" : 2000,
+                            "id" : "cash",
+                            "type" : "currency"
+                        }
+                    ],
+                    "bottom" : 10,
+                    "top" : 4
+                }
+            ],
+            "id" : "26f40b7a4260419e81cc61a8e0c1855d"
+        }
+    ],
+    "expired" : false,
+    "curStageNumber" : 100084,
+    "__v" : 0,
+    "status" : 10
+}

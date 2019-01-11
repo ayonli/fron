@@ -2,10 +2,20 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const pick = require("lodash/pick");
 const omit = require("lodash/omit");
+const get = require("lodash/get");
 const upperFirst = require("lodash/upperFirst");
-const assert_1 = require("assert");
+;
+exports.IsNode = typeof global === "object"
+    && get(global, "process.release.name") === "node";
 exports.Variable = /^[a-z_][a-z0-9_]*$/i;
-exports.MixedTypes = { Object, Array };
+exports.CompoundTypes = {
+    Object: Object,
+    Array: Object
+};
+function isCompound(type) {
+    return !!exports.CompoundTypes[type];
+}
+exports.isCompound = isCompound;
 function getType(data) {
     if (data === undefined) {
         return;
@@ -15,7 +25,7 @@ function getType(data) {
     }
     else {
         let type = typeof data, Type = upperFirst(type), isObj = type == "object";
-        for (let x in exports.MixedTypes) {
+        for (let x in exports.CompoundTypes) {
             if (isObj && data.constructor.name === x) {
                 return x;
             }
@@ -23,15 +33,15 @@ function getType(data) {
                 return type;
             }
         }
-        return isObj ? exports.MixedTypes.Object.name : type;
+        return isObj ? exports.CompoundTypes.Object.name : type;
     }
 }
 exports.getType = getType;
-function isMixed(type) {
-    return !!exports.MixedTypes[type];
+function getInstance(type) {
+    type = typeof type === "function" ? type.name : type;
+    return exports.CompoundTypes[type] && Object.create(exports.CompoundTypes[type].prototype);
 }
-exports.isMixed = isMixed;
-;
+exports.getInstance = getInstance;
 class FRONEntryBase {
     toFRON() {
         return this;
@@ -52,6 +62,12 @@ function checkProto(name, proto) {
         throw new TypeError(`prototype method ${name}.fromFRON() is invalid`);
     }
 }
+function testCompound(type) {
+    type = typeof type === "string" ? type : type.name;
+    if (!isCompound(type)) {
+        throw new ReferenceError(`Unrecognized type: ${type}`);
+    }
+}
 function getValues(data) {
     let arr = [];
     for (let item of data) {
@@ -59,24 +75,62 @@ function getValues(data) {
     }
     return arr;
 }
+function copyProto(source, target) {
+    source = typeof source === "function" ? source.prototype : source;
+    Object.assign(target.prototype, pick(source, [
+        "toFRON",
+        "fromFRON"
+    ]));
+}
 function register(type, proto) {
     if (typeof type === "function") {
-        checkProto(type.name, type.prototype);
-        exports.MixedTypes[type.name] = type;
-    }
-    else {
-        if (typeof proto === "string") {
-            exports.MixedTypes[type] = exports.MixedTypes[proto];
+        if (!proto) {
+            checkProto(type.name, type.prototype);
+            exports.CompoundTypes[type.name] = type;
+        }
+        else if (typeof proto === "string") {
+            testCompound(proto);
+            copyProto(exports.CompoundTypes[proto], type);
+            exports.CompoundTypes[type.name] = type;
+        }
+        else if (typeof proto === "function") {
+            testCompound(proto);
+            copyProto(proto, type);
+            exports.CompoundTypes[type.name] = type;
+        }
+        else if (typeof proto === "object") {
+            checkProto(type.name, proto);
+            copyProto(proto, type);
+            exports.CompoundTypes[type.name] = type;
         }
         else {
+            throw new Error(`Invalid prototype: ${proto}`);
+        }
+    }
+    else if (typeof type === "string") {
+        if (typeof proto === "string") {
+            testCompound(proto);
+            exports.CompoundTypes[type] = exports.CompoundTypes[proto];
+        }
+        else if (typeof proto === "function") {
+            checkProto(proto.name, proto.prototype);
+            exports.CompoundTypes[type] = proto;
+        }
+        else if (typeof proto === "object") {
             checkProto(type, proto);
             let ctor = proto.constructor;
             if (ctor === Object)
                 ctor = class extends FRONEntryBase {
                 };
-            Object.assign(ctor.prototype, proto);
-            exports.MixedTypes[type] = ctor;
+            copyProto(proto, ctor);
+            exports.CompoundTypes[type] = ctor;
         }
+        else {
+            throw new Error(`Invalid prototype: ${proto}`);
+        }
+    }
+    else {
+        throw new TypeError(`Invalid type: ${type}`);
     }
 }
 exports.register = register;
@@ -90,7 +144,7 @@ exports.register = register;
         }
     });
 });
-register(Date.name, {
+register(Date, {
     toFRON() {
         return this.toISOString();
     },
@@ -98,7 +152,7 @@ register(Date.name, {
         return new Date(data);
     }
 });
-register(RegExp.name, {
+register(RegExp, {
     toFRON() {
         return new FRONString(this.toString());
     },
@@ -106,18 +160,34 @@ register(RegExp.name, {
         return new RegExp(data.source, data.flags);
     }
 });
-[Buffer, Map, Set].forEach(type => {
-    register(type.name, {
+[Map, Set].forEach(type => {
+    register(type, {
         toFRON() {
             return getValues(this);
         },
         fromFRON(data) {
-            return type === Buffer ? Buffer.from(data) : new type(data);
+            return new type(data);
         }
     });
 });
 [
-    assert_1.AssertionError,
+    Int8Array,
+    Int16Array,
+    Int16Array,
+    Uint8Array,
+    Uint16Array,
+    Uint32Array
+].forEach(type => {
+    register(type, {
+        toFRON() {
+            return getValues(this);
+        },
+        fromFRON(data) {
+            return type.from(data);
+        }
+    });
+});
+[
     Error,
     EvalError,
     RangeError,
@@ -125,13 +195,13 @@ register(RegExp.name, {
     SyntaxError,
     TypeError
 ].forEach(type => {
-    register(type.name, {
+    register(type, {
         toFRON() {
             let reserved = ["name", "message", "stack"];
             return Object.assign({}, pick(this, reserved), omit(this, reserved));
         },
-        fromFRON(data) {
-            let err = Object.create(type.prototype);
+        fromFRON(data, type) {
+            let err = getInstance(type);
             Object.defineProperties(err, {
                 name: { value: data.name },
                 message: { value: data.message },
@@ -142,4 +212,9 @@ register(RegExp.name, {
         }
     });
 });
+if (exports.IsNode) {
+    let AssertionError = require("assert").AssertionError;
+    register(AssertionError, Error.name);
+    register(Buffer, Uint8Array.name);
+}
 //# sourceMappingURL=types.js.map

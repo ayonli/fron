@@ -4,7 +4,7 @@ const fs = require("fs");
 const { parseToken, composeToken } = require("../dist/parse");
 const { stringify } = require("../dist/stringify");
 
-var filename = __dirname + "/test.fron";
+var filename = __dirname + "/test.bson";
 var fron = fs.readFileSync(filename, "utf8");
 var token = parseToken(fron, filename, token => {
     console.log(token.type);

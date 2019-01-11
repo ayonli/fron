@@ -1,52 +1,77 @@
-# Feature-Rich Object Notation (proposal)
+# Feature-Rich Object Notation (progressing)
 
 JSON, even BSON, only supports a few types of objects. FRON (`/frʌn/`), on the 
 other hand, is meant to support as many types as it can, and be feature-rich, 
 especially for data transmission scenarios like IPC, RPC, and data storage, to 
-bring the closest experience on both I/O sides.
+bring the closest experience on both I/O ends.
 
-*FRON adopts basic JSON style, and is compatible with JSON data.*
+*FRON adopts basic JSON style, and is compatible with JSON/BSON/JSONC* 
+*<small>(JSON with comments)</small> data.*
 
-Currently these types in NodeJS are considered:
+Currently these types in JavaScript are considered:
 
-- `Array`
-- `Boolean`
-- `Buffer`
-- `Comment` JavaScript style comments `//` and `/* */`.
+- `Array` Only literal in case of conflict.
+- `Boolean` Both literal and compound type.
+- `comment` JavaScript style comments `//` and `/* */`.
 - `Date`
-- `Error`
+- `Error` As well as well other built-in errors.
 - `Map`
-- `Null`
-- `Number`
-- `Object`
-- `RegExp`
+- `null`
+- `Number` Both literal and compound type.
+- `Object` Only literal in case of conflict.
+- `RegExp` Both literal and compound type (the compound notation is different 
+    than the constructor, e.g. `RegExp({ source:"[a-z]", flags: "i" })`).
 - `Set`
-- `String` Supports multi-line strings via using backquotes as ES2015 suggested.
+- `String` Both literal and compound type, and supports multi-line strings via 
+    using backquotes as ES2015 suggested.
 - `Symbol` Only supports symbols registered via `Symbol.for()`.
+- `TypedArray` includes all typed arrays such as `Int8Array`, `Uint8Array`, etc.
+
+There are also some special notations that used internally to support more 
+complicated scenarios.
+
 - `Reference` References to one of the nodes of the object, regardless of 
     circulation.
-- `Unknown` Represents the **received** type cannot be stringified or parsed 
-    into the deticated type, and will be handled as its closest type.
+
+While in NodeJS, these types are also pre-registered for support.
+
+- `Buffer`
+- `AssertionError`
 
 *If there are versions for other platforms, they may not include all these types*
 *or presented in different forms. That said, those implementations should be*
-*look-like the NodeJS version as much as they can and translate these types to*
-*platform alternatives instead.*
+*look-like the JavaScript version as much as they can and translate these types*
+*to platform alternatives instead.*
 
-Each of these types are translated to strings (with the same JavaScript syntax)
-like the following examples:
+Each of these types are translated to string notations (with the same JavaScript
+syntax) like the following examples:
 
 ```javascript
-// Array
-["Hello", "World!"]
+/************************ Literal Types *************************/
 
-// Boolean
+// String
+'single-quoted string'
+"double-quoted string"
+`string
+in
+multiple
+lines`
+
+// number
+12345
+1e+32
+NaN
+Infinity
+
+// boolean
 true
 false
 
-// Buffer
-Buffer([1, 2, 3, 4])
-Buffer([0x01, 0x02, 0x03, 0x04])
+// RegExp
+/[a-zA-Z0-9]/i
+
+// null
+null
 
 // Comment
 // single-line comment
@@ -58,6 +83,14 @@ multiple
 lines
 */
 
+// Object
+{ hello: "world", "key with quotes": 12345 }
+
+// Array
+["Hello", "World!"]
+
+/************************ Compound Types *************************/
+
 // Date
 Date("2018-12-10T03:21:29.015Z")
 
@@ -67,40 +100,28 @@ Error({ name: "Error", message: "something went wrong", stack: ... })
 // Map
 Map([["key1", "value1"], ["key2", "value2"]])
 
-// Null
-null
-
-// Number
-12345
-1e+32
-NaN
-Infinity
-
-// Object
-{ hello: "world", "key with quotes": 12345 }
-
-// RegExp
-/[a-zA-Z0-9]/i
-
 // Set
 Set([1, 2, 3, 4])
 
-// String
-'single-quoted string'
-"double-quoted string"
-`string
-in
-multiple
-lines`
-
 // Symbol
 Symbol("description")
+
+// RegExp
+RegExp({ source: "[a-zA-Z0-9]", flags: "i" })
 
 // Reference
 Reference("") // circular reference to the root object.
 Reference("abc")
 Reference("abc.def")
 Reference("abc['d e f']")
+
+// TypedArray
+Int8Array([1, 2, 3, 4])
+Int16Array([1, 2, 3, 4])
+Int32Array([1, 2, 3, 4])
+Uint8Array([1, 2, 3, 4])
+Uint16Array([1, 2, 3, 4])
+Uint32Array([1, 2, 3, 4])
 ```
 
 ## API
@@ -109,7 +130,6 @@ Reference("abc['d e f']")
 
 ```typescript
 FRON.stringify(data: any, pretty?: boolean | string): string
-FRON.stringifyAsync(data: any, pretty?: boolean | string): Promise<string>
 ```
 
 Serializes the given `data` to a FRON string. The optional `pretty` argument is 
@@ -123,7 +143,6 @@ with additional spaces.
 
 ```typescript
 FRON.parse(data: string): any
-FRON.parseAsync(data: string): Promise<any>
 ```
 
 Parses the serialized FRON string to JavaScript object. By default, if meets 
@@ -152,9 +171,10 @@ console.log(data);
 ### Register
 
 ```typescript
-FRON.register<T>(constructor: new (...args) => T): void
-FRON.register<T>(type: string, prototype: { toFRON(): any, fromFRON(data: any): T }): void
-FRON.register(type: string, aliasOf: string): void
+FRON.register<T>(
+    type: string | FRONConstructor<T> | (new (...args: any[]) => any),
+    proto?: string | FRONConstructor<T> | FRONEntry<T>
+)
 ```
 
 Registers a customized data type so that the stringifier and parser can identify
@@ -206,12 +226,12 @@ constructor takes the data as its argument.
 The third signature `FRON.register<T>(type: string, aliasOf: string)` allows the
 user assigning a new type as alias to an existing type, this is very useful when
 a different implementation uses a different name of type that based on that 
-platform but can be handled with an existing approach. Typically, `Uint8Array` 
-is considered as an alias of `Buffer` in NodeJS.
+platform but can be handled with an existing approach. Typically, `Buffer` 
+is considered as an alias of `Uint8Array` in NodeJS.
 
 ```javascript
-FRON.register("Unit8Array", "Buffer");
+// You don't have to do this, the toolkit already done that.
+FRON.register("Buffer", "Unit8Array");
 ```
 
-The when the browser sends binary data with type `Uint8Array`, the NodeJS end 
-can parse it to `Buffer` instance.
+For more programmatic APIs, please check [api.md](./api.md).

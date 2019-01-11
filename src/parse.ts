@@ -1,9 +1,8 @@
-import * as path from "path";
 import last = require("lodash/last");
 import pick = require("lodash/pick");
 import get = require("lodash/get");
 import set = require("lodash/set");
-import { Variable, MixedTypes } from "./types";
+import { Variable, CompoundTypes, getInstance, IsNode } from "./types";
 import {
     LiteralToken,
     string,
@@ -41,7 +40,7 @@ export interface SourceToken {
         };
     };
     /**
-     * The type of the current token, literal types are lower-cased and mixed 
+     * The type of the current token, literal types are lower-cased and compound
      * types are upper-cased.
      */
     type: string;
@@ -54,6 +53,13 @@ export interface SourceToken {
     parent?: SourceToken;
     /** The path of the current token, only for object properties. */
     path?: string;
+    /**
+     * All the comments in the current token. When parsing a comment token, it 
+     * will be appended to the closest parent node, unless the comment is the 
+     * first token. Comments are not important to the parser and will be skipped
+     * when composing data.
+     */
+    comments?: SourceToken[];
 }
 
 /**
@@ -78,9 +84,9 @@ export interface CursorToken {
  * Throws syntax error when the current token is invalid and terminate the 
  * parser immediately.
  */
-export function throwSyntaxError(token: SourceToken) {
+export function throwSyntaxError(token: SourceToken, char: string) {
     let filename = token.filename,
-        type = token.type ? token.type + " token" : "token",
+        type = token.type ? token.type + " token" : "token " + char,
         { line, column } = token.position.start;
     throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
 }
@@ -90,15 +96,28 @@ export function throwSyntaxError(token: SourceToken) {
  * undefined if no handler is registered.
  */
 export function getHandler(type: string): (data: any) => any {
-    return get(MixedTypes[type], "prototype.fromFRON");
+    return get(CompoundTypes[type], "prototype.fromFRON");
 }
 
 /**
- * Gets an instance of the given type, may return undefined if the type isn't 
- * registered.
+ * Normalizes the given path, resolving '..' and '.' segments, and change path
+ * separators to platform preference.
  */
-export function getInstance(type: string): any {
-    return MixedTypes[type] ? Object.create(MixedTypes[type].prototype) : void 0;
+function normalizePath(path: string): string {
+    let parts = path.split(/\/|\\/),
+        sep = IsNode ? "/" : (process.platform == "win32" ? "\\" : "/");
+
+    for (let i = 0; i < parts.length; i++) {
+        if (parts[i] == "..") {
+            parts.splice(i - 1, 2);
+            i -= 2;
+        } else if (parts[i] == ".") {
+            parts.splice(i, 1);
+            i -= 1;
+        }
+    }
+
+    return parts.join(sep);
 }
 
 /** Parses every token in the FRON string. */
@@ -159,7 +178,7 @@ function doParseToken(
                     cursor.index++;
                     cursor.column++;
                 } else {
-                    throwSyntaxError(token);
+                    throwSyntaxError(token, char);
                 }
                 break;
 
@@ -170,35 +189,35 @@ function doParseToken(
                     cursor.index++;
                     cursor.column++;
                 } else {
-                    throwSyntaxError(token);
+                    throwSyntaxError(token, char);
                 }
                 break;
 
             case "(":
-                // The open bracket (`(`) appears right after a mixed type name,
-                // which will be parsed as an individual token, and the bracket
-                // only indicates that it's the beginning of the type container.
-                // A mixed type notation uses a type name and a pair of brackets
-                // to form a container, inside the container, is an pure object
-                // literal or array literal.
-                // The parent here is the very type name node of the mixed type
-                // notation.
+                // The open bracket (`(`) appears right after a compound type 
+                // name, which will be parsed as an individual token, and the 
+                // bracket only indicates that it's the beginning of the type 
+                // container. A compound type notation uses a type name and a 
+                // pair of brackets to form a container, inside the container, 
+                // is an pure object literal or array literal.
+                // The parent here is the very type name node of the compound 
+                // type notation.
                 if (parent) {
                     cursor.index++;
                     cursor.column++
                 } else {
-                    throwSyntaxError(token);
+                    throwSyntaxError(token, char);
                 }
                 break;
 
             case ")":
                 // The closing bracket (`)`) indicates the end position of a 
-                // mixed type container, see above.
+                // compound type container, see above.
                 if (parent) {
                     cursor.index++;
                     cursor.column++
                 } else {
-                    throwSyntaxError(token);
+                    throwSyntaxError(token, char);
                 }
 
                 // Break the loop means the current node has been fully parsed,
@@ -235,7 +254,7 @@ function doParseToken(
                     cursor.index++;
                     cursor.column++;
                 } else {
-                    throwSyntaxError(token);
+                    throwSyntaxError(token, char);
                 }
 
                 // The closing bracket of an object or array indicates the 
@@ -270,7 +289,8 @@ function doParseToken(
                         cursor.column += dataToken.length;
                     }
                 } else {
-                    throwSyntaxError(token);
+                    console.log(str.slice(cursor.index));
+                    throwSyntaxError(token, char);
                 }
                 break loop;
 
@@ -299,25 +319,13 @@ function doParseToken(
                         }
                     }
                 } else {
-                    throwSyntaxError(token);
-                }
-                break loop;
-
-            case "0": // binary, octal or hexadecimal number
-            case ".": // decimal (float) number starts with a point
-                token.type = "number";
-
-                if ((dataToken = number.parseToken(str.slice(cursor.index)))) {
-                    token.data = dataToken.value;
-                    cursor.index += dataToken.length;
-                    cursor.column += dataToken.length;
-                } else {
-                    throwSyntaxError(token);
+                    throwSyntaxError(token, char);
                 }
                 break loop;
 
             default:
                 remains = str.slice(cursor.index);
+                let matches: RegExpMatchArray;
 
                 if ((dataToken = number.parseToken(remains))) { // number
                     token.type = "number";
@@ -329,60 +337,56 @@ function doParseToken(
                     token.data = dataToken.value;
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
-                } else {
-                    let matches = remains.match(TypeOrPorp);
+                } else if (matches = remains.match(TypeOrPorp)) {
+                    let lines = matches[0].split("\n"),
+                        key = matches[1];
 
-                    if (matches) {
-                        let lines = matches[0].split("\n"),
-                            key = matches[1];
+                    cursor.index += key.length;
+                    cursor.line += lines.length - 1;
 
-                        cursor.index += key.length;
-                        cursor.line += lines.length - 1;
-
-                        if (lines.length > 1) {
-                            // If there are new lines between the property (or 
-                            // type name) and the colon(or open bracket), move 
-                            // the column number to the head of the line.
-                            cursor.column = 1;
-                        } else {
-                            cursor.column += key.length;
-                        }
-
-                        if (last(matches[0]) === ":") { // property
-                            token.type = "property";
-
-                            // A property can only appears inside an object.
-                            if (parent && parent.type === "Object") {
-                                token.data = key;
-                            } else {
-                                throwSyntaxError(token);
-                            }
-                        } else {
-                            token.type = key; // mixed type
-
-                            if (!parent && token.type === "Reference") {
-                                // A reference type con only appears inside a
-                                // mixed type (object, array or something else).
-                                throwSyntaxError(token);
-                            } else {
-                                token.data = doParseToken(
-                                    str,
-                                    token,
-                                    cursor,
-                                    listener
-                                );
-
-                                // Since the token of a customized mixed type 
-                                // contains an extra closing bracket ")", and 
-                                // potential spaces, using doParseToken() can 
-                                // let the cursor travel through them.
-                                doParseToken(str, token, cursor);
-                            }
-                        }
+                    if (lines.length > 1) {
+                        // If there are new lines between the property (or type 
+                        // name) and the colon(or open bracket), move the column
+                        // number to the head of the line.
+                        cursor.column = 1;
                     } else {
-                        isFinite(Number(char)) && (token.type = "number");
-                        throwSyntaxError(token);
+                        cursor.column += key.length;
                     }
+
+                    if (last(matches[0]) === ":") { // property
+                        token.type = "property";
+
+                        // A property can only appears inside an object.
+                        if (parent && parent.type === "Object") {
+                            token.data = key;
+                        } else {
+                            throwSyntaxError(token, char);
+                        }
+                    } else { // compound type
+                        token.type = key;
+
+                        if (!parent && token.type === "Reference") {
+                            // A reference type con only appears inside a 
+                            // compound type (object, array or something else).
+                            throwSyntaxError(token, char);
+                        } else {
+                            token.data = doParseToken(
+                                str,
+                                token,
+                                cursor,
+                                listener
+                            );
+
+                            // Since the token of a customized compound type 
+                            // contains an extra closing bracket ")", and 
+                            // potential spaces, using doParseToken() can let 
+                            // the cursor travel through them.
+                            doParseToken(str, token, cursor);
+                        }
+                    }
+                } else {
+                    isFinite(Number(char)) && (token.type = "number");
+                    throwSyntaxError(token, char);
                 }
                 break loop;
         }
@@ -390,7 +394,10 @@ function doParseToken(
 
     token.position.end = pick(cursor, ["line", "column"]);
 
-    if (token.parent && token.parent.type === "Object") { // object
+    if (token.parent && token.type === "comment") {
+        token.parent.comments = token.parent.comments || [];
+        token.parent.comments.push(token);
+    } else if (token.parent && token.parent.type === "Object") { // object
         let prop = token.data,
             isVar = Variable.test(prop),
             prefix = get(token, "parent.parent.path", ""),
@@ -401,7 +408,12 @@ function doParseToken(
         // child node.
         token.path = (prefix || "") + path;
         token.type = "property";
-        token.data = doParseToken(str, token, cursor, listener);
+
+        // Use a while block to parse the property value token, in case there 
+        // are comments before the value node.
+        while (token.data = doParseToken(str, token, cursor, listener)) {
+            if (!token.data || token.data.type !== "comment") break;
+        }
 
         // Append the current node to the parent node as a new property. 
         token.parent.data[prop] = token;
@@ -466,8 +478,10 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
                 data = compose(token.data, refMap); // try to compose first
 
                 // Try to call registered parsing handler to get expected data.
-                data = handle ? handle.call(inst || data, data) : data;
-            } else {
+                data = handle
+                    ? handle.call(inst || data, data, token.type)
+                    : data;
+            } else if (token.type !== "comment") {
                 data = token.data;
             }
             break;
@@ -504,12 +518,12 @@ export function parseToken(
     filename?: string,
     listener?: (token: SourceToken) => void
 ) {
-    return doParseToken(str, null, {
+    return str ? doParseToken(str, null, {
         index: 0,
         line: 1,
         column: 1,
-        filename: filename ? path.resolve(filename) : "<anonymous>"
-    }, listener);
+        filename: filename ? normalizePath(filename) : "<anonymous>"
+    }, listener) : null;
 }
 
 /**
@@ -519,5 +533,5 @@ export function parseToken(
  *  position properly. The default value is `<anonymous>`.
  */
 export function parse(str: string, filename?: string) {
-    return composeToken(parseToken(str, filename));
+    return str ? composeToken(parseToken(str, filename)) : void 0;
 }

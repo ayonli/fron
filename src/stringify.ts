@@ -1,6 +1,12 @@
 import get = require("lodash/get");
 import { string } from "literal-toolkit";
-import { Variable, MixedTypes, isMixed, getType, FRONString } from './types';
+import {
+    Variable,
+    CompoundTypes,
+    FRONString,
+    isCompound,
+    getType,
+} from './types';
 
 /** Stringifies any type of data in a common way. */
 function stringifyCommon(
@@ -22,7 +28,7 @@ function stringifyCommon(
         // Only support the symbols that registered globally.
         let key = Symbol.keyFor(data);
         return key === undefined ? key : "Symbol(" + stringify(key) + ")";
-    } else if (isMixed(type)) {
+    } else if (isCompound(type)) {
         if (refMap.has(data)) {
             // `Reference` is a special type in FRON, it indicates that the 
             // current property references to another property, they are 
@@ -41,7 +47,7 @@ function stringifyCommon(
     }
 }
 
-/** Gets the handler to stringify the corresponding mixed type. */
+/** Gets the handler to stringify the corresponding compound type. */
 function getHandler(
     type: string,
     indent: string,
@@ -118,7 +124,7 @@ function getHandler(
         return handlers[type];
     } else {
         return (data: any) => {
-            let handler: () => any = get(MixedTypes[type], "prototype.toFRON");
+            let handler: Function = get(CompoundTypes[type], "prototype.toFRON");
 
             if (handler) {
                 // If there is a handler registered to deal with the type, apply
