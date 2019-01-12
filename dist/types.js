@@ -149,7 +149,7 @@ register(Date, {
         return this.toISOString();
     },
     fromFRON(data) {
-        return new Date(data);
+        return new this.constructor(data);
     }
 });
 register(RegExp, {
@@ -157,7 +157,7 @@ register(RegExp, {
         return new FRONString(this.toString());
     },
     fromFRON(data) {
-        return new RegExp(data.source, data.flags);
+        return new this.constructor(data.source, data.flags);
     }
 });
 [Map, Set].forEach(type => {
@@ -166,7 +166,7 @@ register(RegExp, {
             return getValues(this);
         },
         fromFRON(data) {
-            return new type(data);
+            return new this.constructor(data);
         }
     });
 });

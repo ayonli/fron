@@ -110,8 +110,8 @@ function checkProto(name: string, proto: FRONEntry<any>) {
         // The `fromFRON()` method needs to accept at least one argument, which 
         // is the data parsed from the FRON string, usually used to create a new
         // instance of the type.
-        // The method may accept any other arguments, if it'll be used for other
-        // usage.
+        // The second argument `type` is optional, when pass, it is the type 
+        // notation in string of the token.
         throw new TypeError(`prototype method ${name}.fromFRON() is invalid`);
     }
 }
@@ -237,7 +237,7 @@ register(Date, {
         return this.toISOString();
     },
     fromFRON(data: string) {
-        return new Date(data);
+        return new this.constructor(data);
     }
 });
 
@@ -249,7 +249,7 @@ register(RegExp, {
     fromFRON(data: { source: string, flags: string }) {
         // For FRON string to support object wrapped by RegExp, and literal is 
         // internally support by the parser.
-        return new RegExp(data.source, data.flags);
+        return new this.constructor(data.source, data.flags);
     }
 });
 
@@ -260,7 +260,7 @@ register(RegExp, {
             return getValues(this);
         },
         fromFRON(data: any[]) {
-            return new (<any>type)(data);
+            return new this.constructor(data);
         }
     });
 });
