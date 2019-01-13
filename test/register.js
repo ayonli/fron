@@ -1,6 +1,6 @@
 const assert = require("assert");
 const pick = require("lodash/pick");
-const { register, getInstance, stringify, parse } = require("..");
+const { register, getInstance, stringify, parse, FRONEntryBase } = require("..");
 
 describe("Register", () => {
     it("should register a class constructor as expected", () => {
@@ -167,5 +167,31 @@ describe("Register", () => {
         assert.equal(fronStr, "Member({name:\"Ayon Lee\",age:23})");
         assert.ok(member instanceof Member);
         assert.deepStrictEqual(Object.assign({}, member), data);
+    });
+
+    it("should register a type with string name instead of class constructor", () => {
+        class Animal {
+            constructor(data) {
+                Object.assign(this, data);
+            }
+        }
+
+        register("Animal", {
+            toFRON() {
+                return Object.assign({}, this);
+            },
+            fromFRON(data) {
+                return new Animal(data);
+            }
+        });
+
+        let data = { name: "Cat", age: 1 };
+        let fronStr = "Animal({name:\"Cat\",age:1})";
+        let cat = parse(fronStr);
+
+        assert.ok(getInstance("Animal") instanceof FRONEntryBase);
+        assert.equal(stringify(new Animal(data)), fronStr);
+        assert.ok(cat instanceof Animal);
+        assert.deepStrictEqual(Object.assign({}, cat), data);
     });
 });
