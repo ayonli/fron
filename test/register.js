@@ -134,4 +134,38 @@ describe("Register", () => {
         assert.ok(date instanceof ISODate);
         assert.deepStrictEqual(date.toISOString(), str);
     });
+
+    it("should register a class constructor as an alias to another class", () => {
+        class User {
+            constructor(data) {
+                Object.assign(this, data);
+            }
+
+            toFRON() {
+                return pick(this, ["name", "age"]);
+            }
+
+            fromFRON(data) {
+                return new this.constructor(data);
+            }
+        }
+
+        class Member {
+            constructor(data) {
+                Object.assign(this, data);
+            }
+        }
+
+        register(User);
+        register(Member, User);
+
+        let data = { name: "Ayon Lee", age: 23 };
+        let fronStr = stringify(new Member(data));
+        let member = parse(fronStr);
+        
+        assert.ok(getInstance(Member) instanceof Member);
+        assert.equal(fronStr, "Member({name:\"Ayon Lee\",age:23})");
+        assert.ok(member instanceof Member);
+        assert.deepStrictEqual(Object.assign({}, member), data);
+    });
 });
