@@ -130,6 +130,14 @@ function register(type, proto) {
     }
 }
 exports.register = register;
+register(Symbol, {
+    toFRON() {
+        return Symbol.keyFor(this);
+    },
+    fromFRON(data) {
+        return Symbol.for(data);
+    }
+});
 [Number, Boolean, String].forEach(type => {
     register(type, {
         toFRON() {
@@ -140,14 +148,6 @@ exports.register = register;
         }
     });
 });
-register(Date, {
-    toFRON() {
-        return this.toISOString();
-    },
-    fromFRON(data) {
-        return new this.constructor(data);
-    }
-});
 register(RegExp, {
     toFRON() {
         return new FRONString(this.toString());
@@ -156,12 +156,12 @@ register(RegExp, {
         return new this.constructor(data.source, data.flags);
     }
 });
-register(Symbol, {
+register(Date, {
     toFRON() {
-        return Symbol.keyFor(this);
+        return this.toISOString();
     },
     fromFRON(data) {
-        return Symbol.for(data);
+        return new this.constructor(data);
     }
 });
 [Map, Set].forEach(type => {

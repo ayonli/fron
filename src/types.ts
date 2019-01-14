@@ -213,6 +213,16 @@ export function register(
     }
 }
 
+// Register handler for Symbol.
+register(<any>Symbol, {
+    toFRON(this: symbol) {
+        return Symbol.keyFor(this);
+    },
+    fromFRON(data: string) {
+        return Symbol.for(data);
+    }
+});
+
 // Register handlers for Number, Boolean, String.
 [Number, Boolean, String].forEach(type => {
     register(type, {
@@ -223,16 +233,6 @@ export function register(
             return new (<any>this.constructor)(data);
         }
     });
-});
-
-// Register handler for Date.
-register(Date, {
-    toFRON(this: Date) {
-        return this.toISOString();
-    },
-    fromFRON(data: string) {
-        return new (<any>this.constructor)(data);
-    }
 });
 
 // Register handler for RegExp.
@@ -247,13 +247,13 @@ register(RegExp, {
     }
 });
 
-// Register handler for Symbol.
-register(<any>Symbol, {
-    toFRON(this: symbol) {
-        return Symbol.keyFor(this);
+// Register handler for Date.
+register(Date, {
+    toFRON(this: Date) {
+        return this.toISOString();
     },
     fromFRON(data: string) {
-        return Symbol.for(data);
+        return new (<any>this.constructor)(data);
     }
 });
 
