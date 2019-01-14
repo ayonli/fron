@@ -270,7 +270,7 @@ function compose(token, refMap) {
                 let handle = getHandler(token.type), inst = types_1.getInstance(token.type);
                 data = compose(token.data, refMap);
                 data = handle
-                    ? handle.call(inst || data, data, token.type)
+                    ? handle.call(inst || data, data)
                     : data;
             }
             else if (token.type !== "comment") {

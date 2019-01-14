@@ -3,9 +3,9 @@
 ## register
 
 ```typescript
-function register<T = any>(
-    type: string | FRONConstructor<T> | (new (...args: any[]) => any),
-    proto?: string | FRONConstructor<T> | FRONEntry<T>
+function register(
+    type: string | FRONConstructor | (new (...args: any[]) => any),
+    proto?: string | FRONConstructor | FRONEntry
 ): void
 ```
 
@@ -128,19 +128,18 @@ The interface that carries token details in the FRON string (source).
 ## FRONEntry
 
 ```typescript
-interface FRONEntry<T> {
+interface FRONEntry {
     toFRON(): any;
-    fromFRON(data: any, type: string): T;
+    fromFRON(data: any): any;
 }
 ```
 
-The interface that restricts which a user defined type can be registered as 
-FRON type.
+The interface restricts if a user defined type can be registered as FRON type.
 
 ## FRONConstructor
 
 ```typescript
-type FRONConstructor<T> = new (...args: any[]) => FRONEntry<T>
+type FRONConstructor = new (...args: any[]) => FRONEntry
 ```
 
 Indicates a class constructor that implements the FRONEntry interface.
@@ -148,7 +147,7 @@ Indicates a class constructor that implements the FRONEntry interface.
 ## FRONEntryBase
 
 ```typescript
-class FRONEntryBase: FRONConstructor<any>
+class FRONEntryBase: FRONConstructor
 ```
 
 When register a type with an object as its prototype, a new sub-class will be 
@@ -168,12 +167,23 @@ approach, just use the represented value as the output notation.
 NOTE: the personalized notation must use valid syntax that can be identified by 
 the parser, it is either a literal, or a compound type.
 
+## getType
+
+```typescript
+function getType(data: any): string
+```
+
+Gets the type name in string of the input data, may return a literal type 
+or a compound type.
+
 ## getInstance
 
 ```typescript
-function getInstance<T = any>(type: string | FRONConstructor<T>): T
+function getInstance<T = any>(type: string | (new (...args: any[]) => T)): T
 ```
 
 Gets an instance of the given type, may return undefined if the type isn't 
 registered, this function calls `Object.create()` to create instance, so the
 constructor will not be called automatically.
+
+NOTE: This function may return `undefined` if the given type isn't registered.

@@ -1,3 +1,4 @@
+require("source-map-support/register");
 const assert = require("assert");
 const { getType } = require("../dist/types");
 

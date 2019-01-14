@@ -482,7 +482,7 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
 
                 // Try to call registered parsing handler to get expected data.
                 data = handle
-                    ? handle.call(inst || data, data, token.type)
+                    ? handle.call(inst || data, data)
                     : data;
             } else if (token.type !== "comment") {
                 data = token.data;

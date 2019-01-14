@@ -4,7 +4,6 @@ import {
     Variable,
     CompoundTypes,
     FRONString,
-    isCompound,
     getType,
 } from './types';
 
@@ -24,11 +23,9 @@ function stringifyCommon(
         return type;
     } else if (type == "string") {
         return string.toLiteral(data);
-    } else if (type == "symbol") {
-        // Only support the symbols that registered globally.
-        let key = Symbol.keyFor(data);
-        return key === undefined ? key : "Symbol(" + stringify(key) + ")";
-    } else if (isCompound(type)) {
+    } else if (type == "Symbol") {
+        return getHandler(type, indent, originalIndent, path, refMap)(data);
+    } else if (typeof data === "object") {
         if (refMap.has(data)) {
             // `Reference` is a special type in FRON, it indicates that the 
             // current property references to another property, they are 
@@ -64,6 +61,8 @@ function getHandler(
                 // get the returning value as the data to be stringified.
                 data = data.toFRON();
             }
+
+            if (data === undefined) return;
 
             // Stringify all enumerable properties of the object.
             for (let x in data) {
@@ -124,14 +123,18 @@ function getHandler(
         return handlers[type];
     } else {
         return (data: any) => {
-            let handler: Function = get(CompoundTypes[type], "prototype.toFRON");
+            let handler: Function;
 
-            if (handler) {
-                // If there is a handler registered to deal with the type, apply
-                // it to the data. The reason to call `apply()` instead of 
-                // calling the method directly is that the handler method may 
-                // not exist on the data instance, it may be registered with an 
-                // object as prototype in the first place.
+            if (typeof data.toFRON == "function") {
+                // If the given object includes a `toFRON()` method, call it and
+                // get the returning value as the data to be stringified.
+                data = data.toFRON();
+            } else if (handler = get(CompoundTypes[type], "prototype.toFRON")) {
+                // If there is a customized handler registered to deal with the 
+                // type, apply it to the data. The reason to call `apply()` 
+                // instead of calling the method directly is that the handler 
+                // method may not exist on the data instance, it may be 
+                // registered with an object as prototype in the first place.
                 data = handler.apply(data);
             } else {
                 // If no handler is found, stringify the data as an ordinary 
@@ -139,7 +142,9 @@ function getHandler(
                 data = Object.assign({}, data);
             }
 
-            if (data instanceof FRONString) {
+            if (data === undefined) {
+                return;
+            } else if (data instanceof FRONString) {
                 return data.valueOf();
             } else {
                 return type + "(" + stringifyCommon(

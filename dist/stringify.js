@@ -14,11 +14,10 @@ function stringifyCommon(data, indent, originalIndent, path, refMap) {
     else if (type == "string") {
         return literal_toolkit_1.string.toLiteral(data);
     }
-    else if (type == "symbol") {
-        let key = Symbol.keyFor(data);
-        return key === undefined ? key : "Symbol(" + stringify(key) + ")";
+    else if (type == "Symbol") {
+        return getHandler(type, indent, originalIndent, path, refMap)(data);
     }
-    else if (types_1.isCompound(type)) {
+    else if (typeof data === "object") {
         if (refMap.has(data)) {
             return "Reference(" + stringify(refMap.get(data)) + ")";
         }
@@ -38,6 +37,8 @@ function getHandler(type, indent, originalIndent, path, refMap) {
             if (typeof data.toFRON == "function") {
                 data = data.toFRON();
             }
+            if (data === undefined)
+                return;
             for (let x in data) {
                 let isVar = types_1.Variable.test(x), prop = isVar ? x : `['${x}']`, res = stringifyCommon(data[x], indent + originalIndent, originalIndent, path + (isVar && path ? "." : "") + prop, refMap);
                 if (res === undefined)
@@ -77,14 +78,20 @@ function getHandler(type, indent, originalIndent, path, refMap) {
     }
     else {
         return (data) => {
-            let handler = get(types_1.CompoundTypes[type], "prototype.toFRON");
-            if (handler) {
+            let handler;
+            if (typeof data.toFRON == "function") {
+                data = data.toFRON();
+            }
+            else if (handler = get(types_1.CompoundTypes[type], "prototype.toFRON")) {
                 data = handler.apply(data);
             }
             else {
                 data = Object.assign({}, data);
             }
-            if (data instanceof types_1.FRONString) {
+            if (data === undefined) {
+                return;
+            }
+            else if (data instanceof types_1.FRONString) {
                 return data.valueOf();
             }
             else {

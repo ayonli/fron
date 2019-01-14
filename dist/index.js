@@ -11,5 +11,6 @@ const types_1 = require("./types");
 exports.register = types_1.register;
 exports.FRONEntryBase = types_1.FRONEntryBase;
 exports.FRONString = types_1.FRONString;
+exports.getType = types_1.getType;
 exports.getInstance = types_1.getInstance;
 //# sourceMappingURL=index.js.map

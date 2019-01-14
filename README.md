@@ -174,9 +174,9 @@ console.log(data);
 ### Register
 
 ```typescript
-function register<T>(
-    type: string | FRONConstructor<T> | (new (...args: any[]) => any),
-    proto?: string | FRONConstructor<T> | FRONEntry<T>
+function register(
+    type: string | FRONConstructor | (new (...args: any[]) => any),
+    proto?: string | FRONConstructor | FRONEntry
 ): void
 ```
 

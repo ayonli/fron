@@ -6,6 +6,7 @@ import {
     FRONEntryBase,
     FRONConstructor,
     FRONString,
+    getType,
     getInstance
 } from "./types";
 
@@ -20,5 +21,6 @@ export {
     FRONEntryBase,
     FRONConstructor,
     FRONString,
+    getType,
     getInstance
 };

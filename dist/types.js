@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const pick = require("lodash/pick");
 const omit = require("lodash/omit");
 const get = require("lodash/get");
-const upperFirst = require("lodash/upperFirst");
 ;
 exports.IsNode = typeof global === "object"
     && get(global, "process.release.name") === "node";
@@ -12,10 +11,6 @@ exports.CompoundTypes = {
     Object: Object,
     Array: Object
 };
-function isCompound(type) {
-    return !!exports.CompoundTypes[type];
-}
-exports.isCompound = isCompound;
 function getType(data) {
     if (data === undefined) {
         return;
@@ -24,16 +19,17 @@ function getType(data) {
         return "null";
     }
     else {
-        let type = typeof data, Type = upperFirst(type), isObj = type == "object";
-        for (let x in exports.CompoundTypes) {
-            if (isObj && data.constructor.name === x) {
-                return x;
-            }
-            else if (!isObj && x === Type) {
-                return type;
-            }
+        let type = typeof data, ctor;
+        if (type !== "object") {
+            return type === "symbol" ? "Symbol" : type;
         }
-        return isObj ? exports.CompoundTypes.Object.name : type;
+        else if (ctor = get(data, "constructor")) {
+            for (let type in exports.CompoundTypes) {
+                if (ctor === exports.CompoundTypes[type])
+                    return type;
+            }
+            return ctor.name;
+        }
     }
 }
 exports.getType = getType;
@@ -44,7 +40,7 @@ function getInstance(type) {
 exports.getInstance = getInstance;
 class FRONEntryBase {
     toFRON() {
-        return this;
+        return Object.assign({}, this);
     }
     fromFRON(data) {
         return data;
@@ -62,9 +58,9 @@ function checkProto(name, proto) {
         throw new TypeError(`prototype method ${name}.fromFRON() is invalid`);
     }
 }
-function testCompound(type) {
+function checkType(type) {
     type = typeof type === "string" ? type : type.name;
-    if (!isCompound(type)) {
+    if (!exports.CompoundTypes[type]) {
         throw new ReferenceError(`Unrecognized type: ${type}`);
     }
 }
@@ -89,12 +85,12 @@ function register(type, proto) {
             exports.CompoundTypes[type.name] = type;
         }
         else if (typeof proto === "string") {
-            testCompound(proto);
+            checkType(proto);
             copyProto(exports.CompoundTypes[proto], type);
             exports.CompoundTypes[type.name] = type;
         }
         else if (typeof proto === "function") {
-            testCompound(proto);
+            checkProto(proto.name, proto.prototype);
             copyProto(proto, type);
             exports.CompoundTypes[type.name] = type;
         }
@@ -109,7 +105,7 @@ function register(type, proto) {
     }
     else if (typeof type === "string") {
         if (typeof proto === "string") {
-            testCompound(proto);
+            checkType(proto);
             exports.CompoundTypes[type] = exports.CompoundTypes[proto];
         }
         else if (typeof proto === "function") {
@@ -134,13 +130,13 @@ function register(type, proto) {
     }
 }
 exports.register = register;
-[Number, Boolean, String, Symbol].forEach(type => {
-    register(type.name, {
+[Number, Boolean, String].forEach(type => {
+    register(type, {
         toFRON() {
             return this.valueOf();
         },
         fromFRON(data) {
-            return type === Symbol ? Symbol.for(data) : new type(data);
+            return new this.constructor(data);
         }
     });
 });
@@ -158,6 +154,14 @@ register(RegExp, {
     },
     fromFRON(data) {
         return new this.constructor(data.source, data.flags);
+    }
+});
+register(Symbol, {
+    toFRON() {
+        return Symbol.keyFor(this);
+    },
+    fromFRON(data) {
+        return Symbol.for(data);
     }
 });
 [Map, Set].forEach(type => {
@@ -200,15 +204,14 @@ register(RegExp, {
             let reserved = ["name", "message", "stack"];
             return Object.assign({}, pick(this, reserved), omit(this, reserved));
         },
-        fromFRON(data, type) {
-            let err = getInstance(type);
-            Object.defineProperties(err, {
+        fromFRON(data) {
+            Object.defineProperties(this, {
                 name: { value: data.name },
                 message: { value: data.message },
                 stack: { value: data.stack }
             });
-            Object.assign(err, omit(data, ["name", "message", "stack"]));
-            return err;
+            Object.assign(this, omit(data, ["name", "message", "stack"]));
+            return this;
         }
     });
 });
