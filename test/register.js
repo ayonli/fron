@@ -25,7 +25,7 @@ describe("Register", () => {
         let user = parse(fronStr);
 
         assert.ok(getInstance(User) instanceof User);
-        assert.equal(fronStr, 'User({name:"Ayon Lee",age:23})');
+        assert.strictEqual(fronStr, 'User({name:"Ayon Lee",age:23})');
         assert.ok(user instanceof User);
         assert.deepStrictEqual(Object.assign({}, user), { name: "Ayon Lee", age: 23 });
     });
@@ -80,7 +80,7 @@ describe("Register", () => {
         let user = parse(fronStr);
 
         assert.ok(getInstance(User) instanceof User);
-        assert.equal(fronStr, 'User({name:"Ayon Lee",age:23})');
+        assert.strictEqual(fronStr, 'User({name:"Ayon Lee",age:23})');
         assert.ok(user instanceof User);
         assert.deepStrictEqual(Object.assign({}, user), { name: "Ayon Lee", age: 23 });
     });
@@ -142,7 +142,7 @@ describe("Register", () => {
         let member = parse(fronStr);
 
         assert.ok(getInstance(Member) instanceof Member);
-        assert.equal(fronStr, "Member({name:\"Ayon Lee\",age:23})");
+        assert.strictEqual(fronStr, "Member({name:\"Ayon Lee\",age:23})");
         assert.ok(member instanceof Member);
         assert.deepStrictEqual(Object.assign({}, member), data);
     });
@@ -189,7 +189,7 @@ describe("Register", () => {
         let date = parse(fronStr);
 
         assert.ok(getInstance(ISODate) instanceof ISODate);
-        assert.equal(fronStr, 'ISODate("' + str + '")');
+        assert.strictEqual(fronStr, 'ISODate("' + str + '")');
         assert.ok(date instanceof ISODate);
         assert.deepStrictEqual(date.toISOString(), str);
     });
@@ -233,7 +233,7 @@ describe("Register", () => {
         let cat = parse(fronStr);
 
         assert.ok(getInstance("Animal") instanceof FRONEntryBase);
-        assert.equal(stringify(new Animal(data)), fronStr);
+        assert.strictEqual(stringify(new Animal(data)), fronStr);
         assert.ok(cat instanceof Animal);
         assert.deepStrictEqual(Object.assign({}, cat), data);
     });
@@ -260,7 +260,7 @@ describe("Register", () => {
         let cat = parse(fronStr);
 
         assert.ok(getInstance("Animal") instanceof EarthAnimal);
-        assert.equal(stringify(new EarthAnimal(data)), fronStr);
+        assert.strictEqual(stringify(new EarthAnimal(data)), fronStr);
         assert.ok(cat instanceof EarthAnimal);
         assert.deepStrictEqual(Object.assign({}, cat), data);
     });
