@@ -65,7 +65,7 @@ describe("Parser", () => {
     });
 
     it("should parse a Date instance as expected", () => {
-        let date = new Date("2019-1-1 00:00:00");
+        let date = new Date("2019-01-01T00:00:00.000Z");
         assert.deepStrictEqual(parse(getData("compound-date")), date);
     });
 

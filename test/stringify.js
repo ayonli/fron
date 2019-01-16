@@ -71,7 +71,7 @@ describe("Stringifier", () => {
     });
 
     it("should stringify a Date instance as expected", () => {
-        let date = new Date("2019-1-1 00:00:00");
+        let date = new Date("2019-01-01T00:00:00.000Z");
         assert.strictEqual(stringify(date), getData("compound-date"));
     });
 
