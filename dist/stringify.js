@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const get = require("get-value");
 const literal_toolkit_1 = require("literal-toolkit");
+const util_1 = require("./util");
 const types_1 = require("./types");
 function stringifyCommon(data, indent, originalIndent, path, refMap) {
     let type = types_1.getType(data);
@@ -40,7 +41,7 @@ function getHandler(type, indent, originalIndent, path, refMap) {
             if (data === undefined)
                 return;
             for (let x in data) {
-                let isVar = types_1.Variable.test(x), prop = isVar ? x : `['${x}']`, res = stringifyCommon(data[x], indent + originalIndent, originalIndent, path + (isVar && path ? "." : "") + prop, refMap);
+                let isVar = util_1.LatinVar.test(x), prop = isVar ? x : `['${x}']`, res = stringifyCommon(data[x], indent + originalIndent, originalIndent, path + (isVar && path ? "." : "") + prop, refMap);
                 if (res === undefined)
                     continue;
                 else if (indent)

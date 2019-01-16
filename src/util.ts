@@ -1,3 +1,12 @@
+import get = require("get-value");
+
+/** Whether the current environment is NodeJS. */
+export const IsNode = typeof global === "object"
+    && get(global, "process.release.name") === "node";
+
+/** The pattern that matches valid JavaScript Latin variable names. */
+export const LatinVar = /^[a-z_][a-z0-9_]*$/i;
+
 /**
  * Gets all properties of an object, including those inherited from prototype.
  */
@@ -62,4 +71,30 @@ export function omit(obj: any, props: (string | number | symbol)[]): any {
     }
 
     return result;
+}
+
+/** Gets the last elements of an array-like object. */
+export function last<T>(target: ArrayLike<T>): T {
+    return target[target.length - 1];
+}
+
+/**
+ * Normalizes the given path, resolving '..' and '.' segments, and change path
+ * separators to platform preference.
+ */
+export function normalize(path: string): string {
+    let parts = path.split(/\/|\\/),
+        sep = IsNode ? "/" : (process.platform == "win32" ? "\\" : "/");
+
+    for (let i = 0; i < parts.length; i++) {
+        if (parts[i] == "..") {
+            parts.splice(i - 1, 2);
+            i -= 2;
+        } else if (parts[i] == ".") {
+            parts.splice(i, 1);
+            i -= 1;
+        }
+    }
+
+    return parts.join(sep);
 }

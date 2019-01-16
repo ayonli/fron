@@ -1,7 +1,7 @@
 import get = require("get-value");
 import set = require("set-value");
-import { pick } from "./util";
-import { Variable, CompoundTypes, getInstance, IsNode } from "./types";
+import { pick, last, normalize, LatinVar } from "./util";
+import { CompoundTypes, getInstance } from "./types";
 import {
     LiteralToken,
     string,
@@ -99,32 +99,6 @@ export function throwSyntaxError(token: SourceToken, char: string) {
  */
 export function getHandler(type: string): (data: any) => any {
     return get(CompoundTypes[type], "prototype.fromFRON");
-}
-
-/**
- * Normalizes the given path, resolving '..' and '.' segments, and change path
- * separators to platform preference.
- */
-function normalizePath(path: string): string {
-    let parts = path.split(/\/|\\/),
-        sep = IsNode ? "/" : (process.platform == "win32" ? "\\" : "/");
-
-    for (let i = 0; i < parts.length; i++) {
-        if (parts[i] == "..") {
-            parts.splice(i - 1, 2);
-            i -= 2;
-        } else if (parts[i] == ".") {
-            parts.splice(i, 1);
-            i -= 1;
-        }
-    }
-
-    return parts.join(sep);
-}
-
-/** Gets the last elements of an array-like object. */
-function last<T>(target: ArrayLike<T>): T {
-    return target[target.length - 1];
 }
 
 /** Parses every token in the FRON string. */
@@ -406,7 +380,7 @@ function doParseToken(
         token.parent.comments.push(token);
     } else if (token.parent && token.parent.type === "Object") { // object
         let prop = token.data,
-            isVar = Variable.test(prop),
+            isVar = LatinVar.test(prop),
             prefix = get(token, "parent.parent.path", ""),
             path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
 
@@ -529,7 +503,7 @@ export function parseToken(
         index: 0,
         line: 1,
         column: 1,
-        filename: filename ? normalizePath(filename) : "<anonymous>"
+        filename: filename ? normalize(filename) : "<anonymous>"
     }, listener) : null;
 }
 

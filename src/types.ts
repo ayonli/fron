@@ -1,5 +1,5 @@
 import get = require("get-value");
-import { pick, omit, values } from "./util";
+import { pick, omit, values, IsNode } from "./util";
 
 /**
  * The interface restricts if a user defined type can be registered as FRON type.
@@ -11,13 +11,6 @@ export interface FRONEntry {
 
 /** Indicates a class constructor that implements the FRONEntry interface. */
 export type FRONConstructor = new (...args: any[]) => FRONEntry;
-
-/** Whether the current environment is NodeJS. */
-export const IsNode = typeof global === "object"
-    && get(global, "process.release.name") === "node";
-
-/** The pattern that matches valid JavaScript Latin variable names. */
-export const Variable = /^[a-z_][a-z0-9_]*$/i;
 
 /** 
  * Stores all supported compound types, includes the types that user registered.
@@ -201,7 +194,9 @@ export function register(
     }
 }
 
-// Register handler for Symbol.
+/*********************** Register Well-Known Types ************************ */
+
+// Register handlers for Symbol.
 register(<any>Symbol, {
     toFRON(this: symbol) {
         return Symbol.keyFor(this);
@@ -223,7 +218,7 @@ register(<any>Symbol, {
     });
 });
 
-// Register handler for RegExp.
+// Register handlers for RegExp.
 register(RegExp, {
     toFRON(this: RegExp) {
         return new FRONString(this.toString());
@@ -235,7 +230,7 @@ register(RegExp, {
     }
 });
 
-// Register handler for Date.
+// Register handlers for Date.
 register(Date, {
     toFRON(this: Date) {
         return this.toISOString();
@@ -319,9 +314,7 @@ register(Date, {
     });
 });
 
-if (IsNode) {
-    // Register some well-known NodeJS types.
-    let AssertionError: FRONConstructor = require("assert").AssertionError;
-    register(AssertionError, Error.name);
+if (IsNode) { // Register some well-known NodeJS types.
+    register(require("assert").AssertionError, Error.name);
     register(Buffer, Uint8Array.name);
 }

@@ -1,7 +1,7 @@
 import get = require("get-value");
 import { string } from "literal-toolkit";
+import { LatinVar } from "./util";
 import {
-    Variable,
     CompoundTypes,
     FRONString,
     getType,
@@ -66,7 +66,7 @@ function getHandler(
 
             // Stringify all enumerable properties of the object.
             for (let x in data) {
-                let isVar = Variable.test(x),
+                let isVar = LatinVar.test(x),
                     prop = isVar ? x : `['${x}']`,
                     res = stringifyCommon(
                         data[x],

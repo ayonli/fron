@@ -21,23 +21,6 @@ function getHandler(type) {
     return get(types_1.CompoundTypes[type], "prototype.fromFRON");
 }
 exports.getHandler = getHandler;
-function normalizePath(path) {
-    let parts = path.split(/\/|\\/), sep = types_1.IsNode ? "/" : (process.platform == "win32" ? "\\" : "/");
-    for (let i = 0; i < parts.length; i++) {
-        if (parts[i] == "..") {
-            parts.splice(i - 1, 2);
-            i -= 2;
-        }
-        else if (parts[i] == ".") {
-            parts.splice(i, 1);
-            i -= 1;
-        }
-    }
-    return parts.join(sep);
-}
-function last(target) {
-    return target[target.length - 1];
-}
 function doParseToken(str, parent, cursor, listener) {
     let char;
     let token;
@@ -131,7 +114,7 @@ function doParseToken(str, parent, cursor, listener) {
                     cursor.index += dataToken.length;
                     cursor.line += lines.length - 1;
                     if (lines.length > 1) {
-                        cursor.column = last(lines).length + 1;
+                        cursor.column = util_1.last(lines).length + 1;
                     }
                     else {
                         cursor.column += dataToken.length;
@@ -158,7 +141,7 @@ function doParseToken(str, parent, cursor, listener) {
                         let lines = dataToken.source.split("\n");
                         cursor.line += lines.length - 1;
                         if (lines.length > 1) {
-                            cursor.column = last(lines).length + 1;
+                            cursor.column = util_1.last(lines).length + 1;
                         }
                         else {
                             cursor.column += dataToken.length;
@@ -194,7 +177,7 @@ function doParseToken(str, parent, cursor, listener) {
                     else {
                         cursor.column += key.length;
                     }
-                    if (last(matches[0]) === ":") {
+                    if (util_1.last(matches[0]) === ":") {
                         token.type = "property";
                         if (parent && parent.type === "Object") {
                             token.data = key;
@@ -227,7 +210,7 @@ function doParseToken(str, parent, cursor, listener) {
         token.parent.comments.push(token);
     }
     else if (token.parent && token.parent.type === "Object") {
-        let prop = token.data, isVar = types_1.Variable.test(prop), prefix = get(token, "parent.parent.path", ""), path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
+        let prop = token.data, isVar = util_1.LatinVar.test(prop), prefix = get(token, "parent.parent.path", ""), path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
         token.path = (prefix || "") + path;
         token.type = "property";
         while (token.data = doParseToken(str, token, cursor, listener)) {
@@ -297,7 +280,7 @@ function parseToken(str, filename, listener) {
         index: 0,
         line: 1,
         column: 1,
-        filename: filename ? normalizePath(filename) : "<anonymous>"
+        filename: filename ? util_1.normalize(filename) : "<anonymous>"
     }, listener) : null;
 }
 exports.parseToken = parseToken;

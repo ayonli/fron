@@ -3,9 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const get = require("get-value");
 const util_1 = require("./util");
 ;
-exports.IsNode = typeof global === "object"
-    && get(global, "process.release.name") === "node";
-exports.Variable = /^[a-z_][a-z0-9_]*$/i;
 exports.CompoundTypes = {
     Object: Object,
     Array: Object
@@ -219,9 +216,8 @@ register(Date, {
         }
     });
 });
-if (exports.IsNode) {
-    let AssertionError = require("assert").AssertionError;
-    register(AssertionError, Error.name);
+if (util_1.IsNode) {
+    register(require("assert").AssertionError, Error.name);
     register(Buffer, Uint8Array.name);
 }
 //# sourceMappingURL=types.js.map
