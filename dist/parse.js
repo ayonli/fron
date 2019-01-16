@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const get = require("get-value");
 const set = require("set-value");
+const util_1 = require("./util");
 const types_1 = require("./types");
 const literal_toolkit_1 = require("literal-toolkit");
 exports.TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
@@ -56,7 +57,7 @@ function doParseToken(str, parent, cursor, listener) {
         token = new SourceToken({
             filename: cursor.filename,
             position: {
-                start: types_1.pick(cursor, ["line", "column"]),
+                start: util_1.pick(cursor, ["line", "column"]),
                 end: undefined
             },
             type: undefined,
@@ -220,7 +221,7 @@ function doParseToken(str, parent, cursor, listener) {
                 break loop;
         }
     }
-    token.position.end = types_1.pick(cursor, ["line", "column"]);
+    token.position.end = util_1.pick(cursor, ["line", "column"]);
     if (token.parent && token.type === "comment") {
         token.parent.comments = token.parent.comments || [];
         token.parent.comments.push(token);

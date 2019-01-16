@@ -1,6 +1,7 @@
 import get = require("get-value");
 import set = require("set-value");
-import { Variable, CompoundTypes, getInstance, IsNode, pick } from "./types";
+import { pick } from "./util";
+import { Variable, CompoundTypes, getInstance, IsNode } from "./types";
 import {
     LiteralToken,
     string,

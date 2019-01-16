@@ -1,32 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const get = require("get-value");
-const unique = require("array-uniq");
-function getProps(obj) {
-    let props = [];
-    props.push(...Reflect.ownKeys(obj), ...Reflect.ownKeys(Object.getPrototypeOf(obj)));
-    return unique(props);
-}
-function pick(obj, keys) {
-    let result = {};
-    for (let key of getProps(obj)) {
-        if (keys.indexOf(key) >= 0) {
-            result[key] = obj[key];
-        }
-    }
-    return result;
-}
-exports.pick = pick;
-function omit(obj, keys) {
-    let result = {};
-    for (let key of getProps(obj)) {
-        if (keys.indexOf(key) === -1 && typeof obj[key] !== "function") {
-            result[key] = obj[key];
-        }
-    }
-    return result;
-}
-exports.omit = omit;
+const util_1 = require("./util");
 ;
 exports.IsNode = typeof global === "object"
     && get(global, "process.release.name") === "node";
@@ -88,16 +63,9 @@ function checkType(type) {
         throw new ReferenceError(`Unrecognized type: ${type}`);
     }
 }
-function getValues(data) {
-    let arr = [];
-    for (let item of data) {
-        arr.push(item);
-    }
-    return arr;
-}
 function copyProto(source, target) {
     source = typeof source === "function" ? source.prototype : source;
-    Object.assign(target.prototype, pick(source, [
+    Object.assign(target.prototype, util_1.pick(source, [
         "toFRON",
         "fromFRON"
     ]));
@@ -191,7 +159,7 @@ register(Date, {
 [Map, Set].forEach(type => {
     register(type, {
         toFRON() {
-            return getValues(this);
+            return util_1.values(this);
         },
         fromFRON(data) {
             return new this.constructor(data);
@@ -208,7 +176,7 @@ register(Date, {
 ].forEach(type => {
     register(type, {
         toFRON() {
-            return getValues(this);
+            return util_1.values(this);
         },
         fromFRON(data) {
             return this.constructor.from(data);
@@ -226,7 +194,7 @@ register(Date, {
     register(type, {
         toFRON() {
             let reserved = ["name", "message", "stack"];
-            return Object.assign({}, pick(this, reserved), omit(this, reserved));
+            return Object.assign({}, util_1.pick(this, reserved), util_1.omit(this, reserved));
         },
         fromFRON(data) {
             Object.defineProperties(this, {
@@ -246,7 +214,7 @@ register(Date, {
                     configurable: true
                 }
             });
-            Object.assign(this, omit(data, ["name", "message", "stack"]));
+            Object.assign(this, util_1.omit(data, ["name", "message", "stack"]));
             return this;
         }
     });

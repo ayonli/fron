@@ -1,45 +1,5 @@
 import get = require("get-value");
-import unique = require("array-uniq");
-
-/**
- * Gets all properties of an object, including those inherited from prototype.
- */
-function getProps(obj: any) {
-    let props: (string | symbol)[] = [];
-
-    props.push(
-        ...(<any>Reflect.ownKeys(obj)),
-        ...(<any>Reflect.ownKeys(Object.getPrototypeOf(obj))),
-    );
-
-    return unique(props);
-}
-
-/** Gets a copy of an object with only the specified keys. */
-export function pick(obj: any, keys: (string | symbol)[]): any {
-    let result = {};
-
-    for (let key of getProps(obj)) {
-        if (keys.indexOf(key) >= 0) {
-            result[key] = obj[key];
-        }
-    }
-
-    return result;
-}
-
-/** Gets a copy of an object without the specified keys. */
-export function omit(obj: any, keys: (string | symbol)[]): any {
-    let result = {};
-
-    for (let key of getProps(obj)) {
-        if (keys.indexOf(key) === -1 && typeof obj[key] !== "function") {
-            result[key] = obj[key];
-        }
-    }
-
-    return result;
-}
+import { pick, omit, values } from "./util";
 
 /**
  * The interface restricts if a user defined type can be registered as FRON type.
@@ -157,17 +117,6 @@ function checkType(type: string | FRONConstructor) {
     if (!CompoundTypes[type]) {
         throw new ReferenceError(`Unrecognized type: ${type}`);
     }
-}
-
-/** Gets the values in the given iterable object. */
-function getValues<T>(data: Iterable<T>): T[] {
-    let arr = [];
-
-    for (let item of data) {
-        arr.push(item);
-    }
-
-    return arr;
 }
 
 /**
@@ -300,7 +249,7 @@ register(Date, {
 [Map, Set].forEach(type => {
     register(type, {
         toFRON(this: Iterable<any>) {
-            return getValues(this);
+            return values(this);
         },
         fromFRON(data: any[]) {
             return new (<any>this.constructor)(data);
@@ -319,7 +268,7 @@ register(Date, {
 ].forEach(type => {
     register(type, {
         toFRON(this: Iterable<number>) {
-            return getValues(this);
+            return values(this);
         },
         fromFRON(data: number[]) {
             return (<any>this.constructor).from(data);
