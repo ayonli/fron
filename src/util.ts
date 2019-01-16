@@ -2,14 +2,23 @@
  * Gets all properties of an object, including those inherited from prototype.
  */
 export function keys(obj: any) {
-    let props: (string | number | symbol)[] = [];
+    let proto = Object.getPrototypeOf(obj);
 
-    props.push(
-        ...Reflect.ownKeys(obj),
-        ...Reflect.ownKeys(Object.getPrototypeOf(obj)),
+    return Reflect.ownKeys(obj).concat(
+        Reflect.ownKeys(proto).filter(key => {
+            if (typeof key === "string" && key.slice(0, 1) === "__") {
+                return false;
+            } else {
+                let pass = false;
+
+                try {
+                    pass = typeof proto[key] !== "function";
+                } finally {
+                    return pass;
+                }
+            }
+        })
     );
-
-    return Array.from(new Set(props));
 }
 
 /** Gets the values in the given iterable object. */
@@ -47,7 +56,7 @@ export function omit(obj: any, props: (string | number | symbol)[]): any {
     let result = {};
 
     for (let key of keys(obj)) {
-        if (props.indexOf(key) === -1 && typeof obj[key] !== "function") {
+        if (props.indexOf(key) === -1) {
             result[key] = obj[key];
         }
     }

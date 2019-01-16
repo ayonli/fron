@@ -1,9 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function keys(obj) {
-    let props = [];
-    props.push(...Reflect.ownKeys(obj), ...Reflect.ownKeys(Object.getPrototypeOf(obj)));
-    return Array.from(new Set(props));
+    let proto = Object.getPrototypeOf(obj);
+    return Reflect.ownKeys(obj).concat(Reflect.ownKeys(proto).filter(key => {
+        if (typeof key === "string" && key.slice(0, 1) === "__") {
+            return false;
+        }
+        else {
+            let pass = false;
+            try {
+                pass = typeof proto[key] !== "function";
+            }
+            finally {
+                return pass;
+            }
+        }
+    }));
 }
 exports.keys = keys;
 function values(data) {
@@ -34,7 +46,7 @@ exports.pick = pick;
 function omit(obj, props) {
     let result = {};
     for (let key of keys(obj)) {
-        if (props.indexOf(key) === -1 && typeof obj[key] !== "function") {
+        if (props.indexOf(key) === -1) {
             result[key] = obj[key];
         }
     }
