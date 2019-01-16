@@ -1,4 +1,4 @@
-import get = require("lodash/get");
+import get = require("get-value");
 import { string } from "literal-toolkit";
 import {
     Variable,

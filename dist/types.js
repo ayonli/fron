@@ -1,8 +1,32 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const pick = require("lodash/pick");
-const omit = require("lodash/omit");
-const get = require("lodash/get");
+const get = require("get-value");
+const unique = require("array-uniq");
+function getProps(obj) {
+    let props = [];
+    props.push(...Reflect.ownKeys(obj), ...Reflect.ownKeys(Object.getPrototypeOf(obj)));
+    return unique(props);
+}
+function pick(obj, keys) {
+    let result = {};
+    for (let key of getProps(obj)) {
+        if (keys.indexOf(key) >= 0) {
+            result[key] = obj[key];
+        }
+    }
+    return result;
+}
+exports.pick = pick;
+function omit(obj, keys) {
+    let result = {};
+    for (let key of getProps(obj)) {
+        if (keys.indexOf(key) === -1 && typeof obj[key] !== "function") {
+            result[key] = obj[key];
+        }
+    }
+    return result;
+}
+exports.omit = omit;
 ;
 exports.IsNode = typeof global === "object"
     && get(global, "process.release.name") === "node";

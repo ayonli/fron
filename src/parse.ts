@@ -1,8 +1,6 @@
-import last = require("lodash/last");
-import pick = require("lodash/pick");
-import get = require("lodash/get");
-import set = require("lodash/set");
-import { Variable, CompoundTypes, getInstance, IsNode } from "./types";
+import get = require("get-value");
+import set = require("set-value");
+import { Variable, CompoundTypes, getInstance, IsNode, pick } from "./types";
 import {
     LiteralToken,
     string,
@@ -121,6 +119,11 @@ function normalizePath(path: string): string {
     }
 
     return parts.join(sep);
+}
+
+/** Gets the last elements of an array-like object. */
+function last<T>(target: ArrayLike<T>): T {
+    return target[target.length - 1];
 }
 
 /** Parses every token in the FRON string. */

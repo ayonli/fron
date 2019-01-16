@@ -1,9 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const last = require("lodash/last");
-const pick = require("lodash/pick");
-const get = require("lodash/get");
-const set = require("lodash/set");
+const get = require("get-value");
+const set = require("set-value");
 const types_1 = require("./types");
 const literal_toolkit_1 = require("literal-toolkit");
 exports.TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
@@ -36,6 +34,9 @@ function normalizePath(path) {
     }
     return parts.join(sep);
 }
+function last(target) {
+    return target[target.length - 1];
+}
 function doParseToken(str, parent, cursor, listener) {
     let char;
     let token;
@@ -55,7 +56,7 @@ function doParseToken(str, parent, cursor, listener) {
         token = new SourceToken({
             filename: cursor.filename,
             position: {
-                start: pick(cursor, ["line", "column"]),
+                start: types_1.pick(cursor, ["line", "column"]),
                 end: undefined
             },
             type: undefined,
@@ -219,7 +220,7 @@ function doParseToken(str, parent, cursor, listener) {
                 break loop;
         }
     }
-    token.position.end = pick(cursor, ["line", "column"]);
+    token.position.end = types_1.pick(cursor, ["line", "column"]);
     if (token.parent && token.type === "comment") {
         token.parent.comments = token.parent.comments || [];
         token.parent.comments.push(token);

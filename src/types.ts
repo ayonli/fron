@@ -1,6 +1,45 @@
-import pick = require("lodash/pick");
-import omit = require("lodash/omit");
-import get = require("lodash/get");
+import get = require("get-value");
+import unique = require("array-uniq");
+
+/**
+ * Gets all properties of an object, including those inherited from prototype.
+ */
+function getProps(obj: any) {
+    let props: (string | symbol)[] = [];
+
+    props.push(
+        ...(<any>Reflect.ownKeys(obj)),
+        ...(<any>Reflect.ownKeys(Object.getPrototypeOf(obj))),
+    );
+
+    return unique(props);
+}
+
+/** Gets a copy of an object with only the specified keys. */
+export function pick(obj: any, keys: (string | symbol)[]): any {
+    let result = {};
+
+    for (let key of getProps(obj)) {
+        if (keys.indexOf(key) >= 0) {
+            result[key] = obj[key];
+        }
+    }
+
+    return result;
+}
+
+/** Gets a copy of an object without the specified keys. */
+export function omit(obj: any, keys: (string | symbol)[]): any {
+    let result = {};
+
+    for (let key of getProps(obj)) {
+        if (keys.indexOf(key) === -1 && typeof obj[key] !== "function") {
+            result[key] = obj[key];
+        }
+    }
+
+    return result;
+}
 
 /**
  * The interface restricts if a user defined type can be registered as FRON type.

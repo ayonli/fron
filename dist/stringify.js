@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const get = require("lodash/get");
+const get = require("get-value");
 const literal_toolkit_1 = require("literal-toolkit");
 const types_1 = require("./types");
 function stringifyCommon(data, indent, originalIndent, path, refMap) {

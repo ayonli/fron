@@ -9,7 +9,6 @@
         "newLine": "LF",
         "noUnusedParameters": false,
         "noUnusedLocals": true,
-        "importHelpers": true,
         "pretty": true,
         "removeComments": true,
         "sourceMap": true,

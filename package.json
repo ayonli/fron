@@ -32,8 +32,11 @@
   },
   "homepage": "https://github.com/hyurl/fron#readme",
   "devDependencies": {
+    "@types/array-uniq": "^1.0.1",
+    "@types/get-value": "^3.0.0",
     "@types/lodash": "^4.14.119",
     "@types/node": "^10.12.18",
+    "@types/set-value": "^2.0.0",
     "mocha": "^5.2.0",
     "source-map-support": "^0.5.10",
     "ts-loader": "^5.3.3",
@@ -42,8 +45,9 @@
     "webpack-cli": "^3.2.1"
   },
   "dependencies": {
+    "array-uniq": "^2.0.0",
+    "get-value": "^3.0.1",
     "literal-toolkit": "^1.1.1",
-    "lodash": "^4.17.11",
-    "tslib": "^1.9.3"
+    "set-value": "^3.0.0"
   }
 }
