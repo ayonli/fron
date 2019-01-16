@@ -4,6 +4,13 @@ const pick = require("lodash/pick");
 const { parse } = require("..");
 const {
     getData,
+    int8Array,
+    int16Array,
+    int32Array,
+    uint8Array,
+    uint16Array,
+    uint32Array,
+    buffer,
     error,
     evalError,
     rangeError,
@@ -146,38 +153,31 @@ describe("Parser", () => {
     });
 
     it("should parse an Int8Array instance as expected", () => {
-        let data = Int8Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
-        assert.deepStrictEqual(parse(getData("compound-int8array")), data);
+        assert.deepStrictEqual(parse(getData("compound-int8array")), int8Array);
     });
 
     it("should parse an Int16Array instance as expected", () => {
-        let data = Int16Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
-        assert.deepStrictEqual(parse(getData("compound-int16array")), data);
+        assert.deepStrictEqual(parse(getData("compound-int16array")), int16Array);
     });
 
     it("should parse an Int32Array instance as expected", () => {
-        let data = Int32Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
-        assert.deepStrictEqual(parse(getData("compound-int32array")), data);
+        assert.deepStrictEqual(parse(getData("compound-int32array")), int32Array);
     });
 
     it("should parse a Uint8Array instance as expected", () => {
-        let data = Uint8Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
-        assert.deepStrictEqual(parse(getData("compound-uint8array")), data);
+        assert.deepStrictEqual(parse(getData("compound-uint8array")), uint8Array);
     });
 
     it("should parse a Uint16Array instance as expected", () => {
-        let data = Uint16Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
-        assert.deepStrictEqual(parse(getData("compound-uint16array")), data);
+        assert.deepStrictEqual(parse(getData("compound-uint16array")), uint16Array);
     });
 
     it("should parse a Uint32Array instance as expected", () => {
-        let data = Uint32Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
-        assert.deepStrictEqual(parse(getData("compound-uint32array")), data);
+        assert.deepStrictEqual(parse(getData("compound-uint32array")), uint32Array);
     });
 
     it("should parse a Buffer instance as expected", () => {
-        let data = Buffer.from("Hello, World!");
-        assert.deepStrictEqual(parse(getData("compound-buffer")), data);
+        assert.deepStrictEqual(parse(getData("compound-buffer")), buffer);
     });
 
     it("should parse an Error instance as expected", () => {
