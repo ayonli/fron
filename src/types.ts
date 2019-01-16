@@ -273,7 +273,7 @@ register(Date, {
 [
     Int8Array,
     Int16Array,
-    Int16Array,
+    Int32Array,
     Uint8Array,
     Uint16Array,
     Uint32Array
@@ -308,9 +308,21 @@ register(Date, {
         },
         fromFRON(this: Error, data: { [x: string]: any }) {
             Object.defineProperties(this, {
-                name: { value: data.name },
-                message: { value: data.message },
-                stack: { value: data.stack }
+                name: {
+                    value: data.name,
+                    writable: true,
+                    configurable: true
+                },
+                message: {
+                    value: data.message,
+                    writable: true,
+                    configurable: true
+                },
+                stack: {
+                    value: data.stack,
+                    writable: true,
+                    configurable: true
+                }
             });
             Object.assign(this, omit(data, ["name", "message", "stack"]));
 

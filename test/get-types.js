@@ -1,6 +1,15 @@
 require("source-map-support/register");
 const assert = require("assert");
 const { getType } = require("..");
+const {
+    int8Array,
+    int16Array,
+    int32Array,
+    uint8Array,
+    uint16Array,
+    uint32Array,
+    buffer
+} = require("./data");
 
 describe("Get types", () => {
     it("should get literal type 'string' as expected", () => {
@@ -45,5 +54,33 @@ describe("Get types", () => {
 
     it("should get compound type 'Set' as expected", () => {
         assert.strictEqual(getType(new Set(["Hello, World!", "Hi, Ayon!"])), "Set");
+    });
+
+    it("should get compound type 'Int8Array' as expected", () => {
+        assert.strictEqual(getType(int8Array), Int8Array.name);
+    });
+
+    it("should get compound type 'Int16Array' as expected", () => {
+        assert.strictEqual(getType(int16Array), Int16Array.name);
+    });
+
+    it("should get compound type 'Int32Array' as expected", () => {
+        assert.strictEqual(getType(int32Array), Int32Array.name);
+    });
+
+    it("should get compound type 'Uint8Array' as expected", () => {
+        assert.strictEqual(getType(uint8Array), Uint8Array.name);
+    });
+
+    it("should get compound type 'Uint16Array' as expected", () => {
+        assert.strictEqual(getType(uint16Array), Uint16Array.name);
+    });
+
+    it("should get compound type 'Uint32Array' as expected", () => {
+        assert.strictEqual(getType(uint32Array), Uint32Array.name);
+    });
+
+    it("should get compound type 'Buffer' as expected", () => {
+        assert.strictEqual(getType(buffer), Buffer.name);
     });
 });

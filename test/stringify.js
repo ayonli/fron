@@ -1,7 +1,34 @@
 require("source-map-support/register");
 const assert = require("assert");
 const { stringify } = require("..");
-const { getData } = require("./data");
+const {
+    getData,
+    setData,
+    int8Array,
+    int16Array,
+    int32Array,
+    uint8Array,
+    uint16Array,
+    uint32Array,
+    buffer,
+    error,
+    evalError,
+    rangeError,
+    referenceError,
+    syntaxError,
+    typeError,
+    assertionError
+} = require("./data");
+
+before(() => {
+    setData("compound-error", stringify(error, true))
+    setData("compound-eval-error", stringify(evalError, true))
+    setData("compound-range-error", stringify(rangeError, true))
+    setData("compound-reference-error", stringify(referenceError, true))
+    setData("compound-syntax-error", stringify(syntaxError, true))
+    setData("compound-type-error", stringify(typeError, true))
+    setData("compound-assertion-error", stringify(assertionError, true))
+});
 
 describe("Stringifier", () => {
     it("should stringify a string literal as expected", () => {
@@ -15,6 +42,10 @@ describe("Stringifier", () => {
     it("should stringify boolean literals as expected", () => {
         assert.strictEqual(stringify(true), getData("literal-boolean-true"));
         assert.strictEqual(stringify(false), getData("literal-boolean-false"));
+    });
+
+    it("should stringify a regexp literal as expected", () => {
+        assert.strictEqual(stringify(/[a-z]/i), getData("literal-regexp"));
     });
 
     it("should stringify special numbers as expected", () => {
@@ -37,10 +68,6 @@ describe("Stringifier", () => {
 
     it("should stringify a Symbol instance as expected", () => {
         assert.strictEqual(stringify(Symbol.for("example")), getData("compound-symbol"));
-    });
-
-    it("should stringify a RegExp instance as expected", () => {
-        assert.strictEqual(stringify(/[a-z]/i), getData("compound-regexp"));
     });
 
     it("should stringify a Date instance as expected", () => {
@@ -122,5 +149,61 @@ describe("Stringifier", () => {
     it("should stringify a Set instance and prettify the output as expected", () => {
         let data = new Set([["abc", "Hello, World!"], [{ efg: "Hi, Ayon" }, 1]]);
         assert.strictEqual(stringify(data, true), getData("compound-set-2"));
+    });
+
+    it("should stringify an Int8Array instance as expected", () => {
+        assert.strictEqual(stringify(int8Array), getData("compound-int8array"));
+    });
+
+    it("should stringify an Int16Array instance as expected", () => {
+        assert.strictEqual(stringify(int16Array), getData("compound-int16array"));
+    });
+
+    it("should stringify an Int32Array instance as expected", () => {
+        assert.strictEqual(stringify(int32Array), getData("compound-int32array"));
+    });
+
+    it("should stringify a Uint8Array instance as expected", () => {
+        assert.strictEqual(stringify(uint8Array), getData("compound-uint8array"));
+    });
+
+    it("should stringify a Uint16Array instance as expected", () => {
+        assert.strictEqual(stringify(uint16Array), getData("compound-uint16array"));
+    });
+
+    it("should stringify a Uint32Array instance as expected", () => {
+        assert.strictEqual(stringify(uint32Array), getData("compound-uint32array"));
+    });
+
+    it("should stringify a Buffer instance as expected", () => {
+        assert.strictEqual(stringify(buffer), getData("compound-buffer"));
+    });
+
+    it("should stringify an Error instance as expected", () => {
+        assert.strictEqual(stringify(error, true), getData("compound-error"));
+    });
+
+    it("should stringify an EvalError instance as expected", () => {
+        assert.strictEqual(stringify(evalError, true), getData("compound-eval-error"));
+    });
+
+    it("should stringify a RangeError instance as expected", () => {
+        assert.strictEqual(stringify(rangeError, true), getData("compound-range-error"));
+    });
+
+    it("should stringify a ReferenceError instance as expected", () => {
+        assert.strictEqual(stringify(referenceError, true), getData("compound-reference-error"));
+    });
+
+    it("should stringify a SyntaxError instance as expected", () => {
+        assert.strictEqual(stringify(syntaxError, true), getData("compound-syntax-error"));
+    });
+
+    it("should stringify a TypeError instance as expected", () => {
+        assert.strictEqual(stringify(typeError, true), getData("compound-type-error"));
+    });
+
+    it("should stringify an AssertionError instance as expected", () => {
+        assert.strictEqual(stringify(assertionError, true), getData("compound-assertion-error"));
     });
 });

@@ -7,6 +7,7 @@ module.exports = {
         process: false
     },
     output: {
+        path: __dirname + "/bundle",
         filename: "fron.min.js",
         library: "FRON",
         libraryTarget: "umd",

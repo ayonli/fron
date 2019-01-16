@@ -1,7 +1,24 @@
 require("source-map-support/register");
 const assert = require("assert");
+const pick = require("lodash/pick");
 const { parse } = require("..");
-const { getData } = require("./data");
+const {
+    getData,
+    error,
+    evalError,
+    rangeError,
+    referenceError,
+    syntaxError,
+    typeError,
+    assertionError
+} = require("./data");
+
+/**
+ * @param {Error} err 
+ */
+function accessError(err) {
+    return Object.assign({}, err, pick(err, ["name", "message", "stack"]));
+};
 
 describe("Parser", () => {
     it("should parse a string literal as expected", () => {
@@ -15,6 +32,10 @@ describe("Parser", () => {
     it("should parse boolean literals as expected", () => {
         assert.strictEqual(parse(getData("literal-boolean-true")), true);
         assert.strictEqual(parse(getData("literal-boolean-false")), false);
+    });
+
+    it("should parse a regexp literal as expected", () => {
+        assert.deepStrictEqual(parse(getData("literal-regexp")), /[a-z]/i);
     });
 
     it("should parse special numbers as expected", () => {
@@ -122,5 +143,82 @@ describe("Parser", () => {
     it("should parse a Set instance and prettify the output as expected", () => {
         let data = new Set([["abc", "Hello, World!"], [{ efg: "Hi, Ayon" }, 1]]);
         assert.deepStrictEqual(parse(getData("compound-set-2")), data, true);
+    });
+
+    it("should parse an Int8Array instance as expected", () => {
+        let data = Int8Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
+        assert.deepStrictEqual(parse(getData("compound-int8array")), data);
+    });
+
+    it("should parse an Int16Array instance as expected", () => {
+        let data = Int16Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
+        assert.deepStrictEqual(parse(getData("compound-int16array")), data);
+    });
+
+    it("should parse an Int32Array instance as expected", () => {
+        let data = Int32Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
+        assert.deepStrictEqual(parse(getData("compound-int32array")), data);
+    });
+
+    it("should parse a Uint8Array instance as expected", () => {
+        let data = Uint8Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
+        assert.deepStrictEqual(parse(getData("compound-uint8array")), data);
+    });
+
+    it("should parse a Uint16Array instance as expected", () => {
+        let data = Uint16Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
+        assert.deepStrictEqual(parse(getData("compound-uint16array")), data);
+    });
+
+    it("should parse a Uint32Array instance as expected", () => {
+        let data = Uint32Array.from([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]);
+        assert.deepStrictEqual(parse(getData("compound-uint32array")), data);
+    });
+
+    it("should parse a Buffer instance as expected", () => {
+        let data = Buffer.from("Hello, World!");
+        assert.deepStrictEqual(parse(getData("compound-buffer")), data);
+    });
+
+    it("should parse an Error instance as expected", () => {
+        let data = parse(getData("compound-error"));
+        assert.strictEqual(data.constructor, error.constructor);
+        assert.deepStrictEqual(accessError(data), accessError(error));
+    });
+
+    it("should parse an EvalError instance as expected", () => {
+        let data = parse(getData("compound-eval-error"));
+        assert.strictEqual(data.constructor, evalError.constructor);
+        assert.deepStrictEqual(accessError(data), accessError(evalError));
+    });
+
+    it("should parse a RangeError instance as expected", () => {
+        let data = parse(getData("compound-range-error"));
+        assert.strictEqual(data.constructor, rangeError.constructor);
+        assert.deepStrictEqual(accessError(data), accessError(rangeError));
+    });
+
+    it("should parse a ReferenceError instance as expected", () => {
+        let data = parse(getData("compound-reference-error"));
+        assert.strictEqual(data.constructor, referenceError.constructor);
+        assert.deepStrictEqual(accessError(data), accessError(referenceError));
+    });
+
+    it("should parse a SyntaxError instance as expected", () => {
+        let data = parse(getData("compound-syntax-error"));
+        assert.strictEqual(data.constructor, syntaxError.constructor);
+        assert.deepStrictEqual(accessError(data), accessError(syntaxError));
+    });
+
+    it("should parse a TypeError instance as expected", () => {
+        let data = parse(getData("compound-type-error"));
+        assert.strictEqual(data.constructor, typeError.constructor);
+        assert.deepStrictEqual(accessError(data), accessError(typeError));
+    });
+
+    it("should parse an AssertionError instance as expected", () => {
+        let data = parse(getData("compound-assertion-error"));
+        assert.strictEqual(data.constructor, assertionError.constructor);
+        assert.deepStrictEqual(accessError(data), accessError(assertionError));
     });
 });

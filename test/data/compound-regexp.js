@@ -1,1 +1,4 @@
-/[a-z]/i
+RegExp({
+  source: "[a-z]",
+  flags: "i"
+})
