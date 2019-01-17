@@ -15,7 +15,7 @@ export function keys(obj: any) {
 
     return Reflect.ownKeys(obj).concat(
         Reflect.ownKeys(proto).filter(key => {
-            if (typeof key === "string" && key.slice(0, 1) === "__") {
+            if (typeof key === "string" && key.slice(0, 2) === "__") {
                 return false;
             } else {
                 let pass = false;
