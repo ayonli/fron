@@ -46,6 +46,9 @@
   "dependencies": {
     "get-value": "^3.0.1",
     "literal-toolkit": "^1.1.2",
+    "lodash": "^4.17.11",
+    "lodash.get": "^4.4.2",
+    "lodash.set": "^4.3.2",
     "set-value": "^3.0.0"
   }
 }

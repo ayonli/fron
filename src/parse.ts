@@ -1,6 +1,8 @@
-import get = require("get-value");
-import set = require("set-value");
-import { pick, last, normalize, LatinVar } from "./util";
+import get = require("lodash/get");
+import set = require("lodash/set");
+import pick = require("lodash/get");
+import last = require("lodash/last");
+import { normalize, LatinVar } from "./util";
 import { CompoundTypes, getInstance } from "./types";
 import {
     LiteralToken,
@@ -270,7 +272,6 @@ function doParseToken(
                         cursor.column += dataToken.length;
                     }
                 } else {
-                    console.log(str.slice(cursor.index));
                     throwSyntaxError(token, char);
                 }
                 break loop;
@@ -399,7 +400,7 @@ function doParseToken(
         // Append the current node to the parent node as a new property. 
         token.parent.data[prop] = token;
     } else if (token.parent && token.parent.type === "Array") { // array
-        let prefix = get(token, "parent.path", "");
+        let prefix = get(token, "parent.parent.path", "");
 
         // If the parent node is an array, append the current node to the parent
         // node as its element.
@@ -448,7 +449,11 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
         case "Reference":
             // The data contained by Reference is a SourceToken with string,
             // which should be composed first before using it.
-            refMap[token.parent.path] = compose(token.data, refMap);
+            if (token.parent.type === "Array") {
+                refMap[token.path] = compose(token.data, refMap);
+            } else { // property
+                refMap[token.parent.path] = compose(token.data, refMap);
+            }
             break;
 
         default:

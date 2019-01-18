@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const get = require("get-value");
-const set = require("set-value");
+const get = require("lodash/get");
+const set = require("lodash/set");
+const pick = require("lodash/get");
+const last = require("lodash/last");
 const util_1 = require("./util");
 const types_1 = require("./types");
 const literal_toolkit_1 = require("literal-toolkit");
@@ -40,7 +42,7 @@ function doParseToken(str, parent, cursor, listener) {
         token = new SourceToken({
             filename: cursor.filename,
             position: {
-                start: util_1.pick(cursor, ["line", "column"]),
+                start: pick(cursor, ["line", "column"]),
                 end: undefined
             },
             type: undefined,
@@ -114,14 +116,13 @@ function doParseToken(str, parent, cursor, listener) {
                     cursor.index += dataToken.length;
                     cursor.line += lines.length - 1;
                     if (lines.length > 1) {
-                        cursor.column = util_1.last(lines).length + 1;
+                        cursor.column = last(lines).length + 1;
                     }
                     else {
                         cursor.column += dataToken.length;
                     }
                 }
                 else {
-                    console.log(str.slice(cursor.index));
                     throwSyntaxError(token, char);
                 }
                 break loop;
@@ -141,7 +142,7 @@ function doParseToken(str, parent, cursor, listener) {
                         let lines = dataToken.source.split("\n");
                         cursor.line += lines.length - 1;
                         if (lines.length > 1) {
-                            cursor.column = util_1.last(lines).length + 1;
+                            cursor.column = last(lines).length + 1;
                         }
                         else {
                             cursor.column += dataToken.length;
@@ -177,7 +178,7 @@ function doParseToken(str, parent, cursor, listener) {
                     else {
                         cursor.column += key.length;
                     }
-                    if (util_1.last(matches[0]) === ":") {
+                    if (last(matches[0]) === ":") {
                         token.type = "property";
                         if (parent && parent.type === "Object") {
                             token.data = key;
@@ -204,7 +205,7 @@ function doParseToken(str, parent, cursor, listener) {
                 break loop;
         }
     }
-    token.position.end = util_1.pick(cursor, ["line", "column"]);
+    token.position.end = pick(cursor, ["line", "column"]);
     if (token.parent && token.type === "comment") {
         token.parent.comments = token.parent.comments || [];
         token.parent.comments.push(token);
@@ -220,7 +221,7 @@ function doParseToken(str, parent, cursor, listener) {
         token.parent.data[prop] = token;
     }
     else if (token.parent && token.parent.type === "Array") {
-        let prefix = get(token, "parent.path", "");
+        let prefix = get(token, "parent.parent.path", "");
         token.path = `${prefix}[${token.parent.data.length}]`;
         token.parent.data.push(token);
     }
@@ -248,7 +249,12 @@ function compose(token, refMap) {
             }
             break;
         case "Reference":
-            refMap[token.parent.path] = compose(token.data, refMap);
+            if (token.parent.type === "Array") {
+                refMap[token.path] = compose(token.data, refMap);
+            }
+            else {
+                refMap[token.parent.path] = compose(token.data, refMap);
+            }
             break;
         default:
             if (token.data instanceof SourceToken) {

@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const get = require("get-value");
+const get = require("lodash/get");
+const pick = require("lodash/pick");
+const omit = require("lodash/omit");
 const util_1 = require("./util");
 ;
 exports.CompoundTypes = {
@@ -62,7 +64,7 @@ function checkType(type) {
 }
 function copyProto(source, target) {
     source = typeof source === "function" ? source.prototype : source;
-    Object.assign(target.prototype, util_1.pick(source, [
+    Object.assign(target.prototype, pick(source, [
         "toFRON",
         "fromFRON"
     ]));
@@ -191,7 +193,7 @@ register(Date, {
     register(type, {
         toFRON() {
             let reserved = ["name", "message", "stack"];
-            return Object.assign({}, util_1.pick(this, reserved), util_1.omit(this, reserved));
+            return Object.assign({}, pick(this, reserved), omit(this, reserved));
         },
         fromFRON(data) {
             Object.defineProperties(this, {
@@ -211,7 +213,7 @@ register(Date, {
                     configurable: true
                 }
             });
-            Object.assign(this, util_1.omit(data, ["name", "message", "stack"]));
+            Object.assign(this, omit(data, ["name", "message", "stack"]));
             return this;
         }
     });

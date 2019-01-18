@@ -1,5 +1,7 @@
-import get = require("get-value");
-import { pick, omit, values, IsNode } from "./util";
+import get = require("lodash/get");
+import pick = require("lodash/pick");
+import omit = require("lodash/omit");
+import { values, IsNode } from "./util";
 
 /**
  * The interface restricts if a user defined type can be registered as FRON type.

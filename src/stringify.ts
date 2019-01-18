@@ -1,4 +1,4 @@
-import get = require("get-value");
+import get = require("lodash/get");
 import { string } from "literal-toolkit";
 import { LatinVar } from "./util";
 import {

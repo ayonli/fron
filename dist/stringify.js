@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const get = require("get-value");
+const get = require("lodash/get");
 const literal_toolkit_1 = require("literal-toolkit");
 const util_1 = require("./util");
 const types_1 = require("./types");

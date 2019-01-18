@@ -48,8 +48,6 @@ exports.circularReference.def = exports.circularReference;
 exports.circularReference.abc.prop3 = exports.circularReference.abc;
 exports.circularReference.abc.prop2.push(exports.circularReference.abc.prop2);
 
-console.log(exports.circularReference);
-
 /**
  * @param {string} name 
  */
