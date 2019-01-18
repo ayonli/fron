@@ -17,17 +17,20 @@ const {
     referenceError,
     syntaxError,
     typeError,
-    assertionError
+    assertionError,
+    regularReference,
+    circularReference
 } = require("./data");
 
 before(() => {
-    setData("compound-error", stringify(error, true))
-    setData("compound-eval-error", stringify(evalError, true))
-    setData("compound-range-error", stringify(rangeError, true))
-    setData("compound-reference-error", stringify(referenceError, true))
-    setData("compound-syntax-error", stringify(syntaxError, true))
-    setData("compound-type-error", stringify(typeError, true))
-    setData("compound-assertion-error", stringify(assertionError, true))
+    setData("compound-error", stringify(error, true));
+    setData("compound-eval-error", stringify(evalError, true));
+    setData("compound-range-error", stringify(rangeError, true));
+    setData("compound-reference-error", stringify(referenceError, true));
+    setData("compound-syntax-error", stringify(syntaxError, true));
+    setData("compound-type-error", stringify(typeError, true));
+    setData("compound-assertion-error", stringify(assertionError, true));
+    setData("compound-circular-reference", stringify(circularReference, true));
 });
 
 describe("Stringifier", () => {
@@ -205,5 +208,13 @@ describe("Stringifier", () => {
 
     it("should stringify an AssertionError instance as expected", () => {
         assert.strictEqual(stringify(assertionError, true), getData("compound-assertion-error"));
+    });
+
+    it("should stringify an object with regular references as expected", () => {
+        assert.strictEqual(stringify(regularReference, true), getData("compound-regular-reference"));
+    });
+
+    it("should stringify an object with circular references as expected", () => {
+        assert.strictEqual(stringify(circularReference, true), getData("compound-circular-reference"));
     });
 });

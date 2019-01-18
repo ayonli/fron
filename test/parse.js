@@ -17,7 +17,9 @@ const {
     referenceError,
     syntaxError,
     typeError,
-    assertionError
+    assertionError,
+    regularReference,
+    circularReference
 } = require("./data");
 
 /**
@@ -220,5 +222,13 @@ describe("Parser", () => {
         let data = parse(getData("compound-assertion-error"));
         assert.strictEqual(data.constructor, assertionError.constructor);
         assert.deepStrictEqual(accessError(data), accessError(assertionError));
+    });
+
+    it("should parse an object with regular references as expected", () => {
+        assert.deepStrictEqual(parse(getData("compound-regular-reference")), regularReference);
+    });
+
+    it("should parse an object with circular references as expected", () => {
+        assert.deepStrictEqual(parse(getData("compound-circular-reference")), circularReference);
     });
 });

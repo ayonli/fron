@@ -25,6 +25,31 @@ try {
     exports.assertionError = err;
 }
 
+exports.regularReference = {
+    abc: {
+        prop1: "Hello, World",
+        prop2: [
+            "Hi, Ayon"
+        ]
+    }
+};
+exports.regularReference.def = exports.regularReference.abc;
+exports.regularReference.ghi = exports.regularReference.abc.prop2;
+
+exports.circularReference = {
+    abc: {
+        prop1: "Hello, World",
+        prop2: [
+            "Hi, Ayon"
+        ]
+    }
+};
+exports.circularReference.def = exports.circularReference;
+exports.circularReference.abc.prop3 = exports.circularReference.abc;
+exports.circularReference.abc.prop2.push(exports.circularReference.abc.prop2);
+
+console.log(exports.circularReference);
+
 /**
  * @param {string} name 
  */
