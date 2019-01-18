@@ -29,12 +29,16 @@ exports.regularReference = {
     abc: {
         prop1: "Hello, World",
         prop2: [
-            "Hi, Ayon"
+            "Hi, Ayon",
+            [
+                "Hello, World!"
+            ]
         ]
     }
 };
 exports.regularReference.def = exports.regularReference.abc;
 exports.regularReference.ghi = exports.regularReference.abc.prop2;
+exports.regularReference.abc.prop2.push(exports.regularReference.abc.prop2[1]);
 
 exports.circularReference = {
     abc: {

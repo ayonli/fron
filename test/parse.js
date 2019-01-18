@@ -229,6 +229,9 @@ describe("Parser", () => {
     });
 
     it("should parse an object with circular references as expected", () => {
-        assert.deepStrictEqual(parse(getData("compound-circular-reference")), circularReference);
+        let nodeVersion = parseInt(process.version.slice(1));
+        if (nodeVersion > 8) {
+            assert.deepStrictEqual(parse(getData("compound-circular-reference")), circularReference);
+        }
     });
 });

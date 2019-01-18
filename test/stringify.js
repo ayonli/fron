@@ -30,6 +30,7 @@ before(() => {
     setData("compound-syntax-error", stringify(syntaxError, true));
     setData("compound-type-error", stringify(typeError, true));
     setData("compound-assertion-error", stringify(assertionError, true));
+    setData("compound-regular-reference", stringify(regularReference, true));
     setData("compound-circular-reference", stringify(circularReference, true));
 });
 
