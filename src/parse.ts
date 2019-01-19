@@ -436,6 +436,8 @@ function doParseToken(
 function compose(token: SourceToken, refMap: { [path: string]: string }): any {
     let data: any;
 
+    if (!token) return;
+
     switch (token.type) {
         case "Object":
             data = {};
@@ -488,7 +490,7 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
 /** Composes a token or token tree to a JavaScript object. */
 export function composeToken(token: SourceToken): any {
     let refMap = {},
-        data = compose(token, refMap);
+        data = compose(token.type === "root" ? token.data : token, refMap);
 
     // Sets all references according to the map.
     for (let path in refMap) {
@@ -548,6 +550,5 @@ export function parseToken(
  *  position properly. The default value is `<anonymous>`.
  */
 export function parse(str: string, filename?: string): any {
-    let token = parseToken(str, filename);
-    return token && token.data ? composeToken(token.data) : void 0;
+    return composeToken(parseToken(str, filename));
 }

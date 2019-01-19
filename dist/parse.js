@@ -240,6 +240,8 @@ function doParseToken(str, parent, cursor, listener) {
 }
 function compose(token, refMap) {
     let data;
+    if (!token)
+        return;
     switch (token.type) {
         case "Object":
             data = {};
@@ -277,7 +279,7 @@ function compose(token, refMap) {
     return data;
 }
 function composeToken(token) {
-    let refMap = {}, data = compose(token, refMap);
+    let refMap = {}, data = compose(token.type === "root" ? token.data : token, refMap);
     for (let path in refMap) {
         let target = refMap[path];
         let ref = target ? get(data, target) : data;
@@ -312,8 +314,7 @@ function parseToken(str, filename, listener) {
 }
 exports.parseToken = parseToken;
 function parse(str, filename) {
-    let token = parseToken(str, filename);
-    return token && token.data ? composeToken(token.data) : void 0;
+    return composeToken(parseToken(str, filename));
 }
 exports.parse = parse;
 //# sourceMappingURL=parse.js.map
