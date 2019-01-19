@@ -113,10 +113,12 @@ The interface that carries token details in the FRON string (source).
     the default value will be `<anonymous>`.
 - `position` The appearing position of the current token, includes both start 
     and end positions.
-- `type` The type of the current token, literal types are lower-cased and 
-    compound types are upper-cased.
+- `type` The type of the current token, by default, literal types are 
+    lower-cased and compound types are upper-cased. For convenience, every 
+    SourceToken is carried inside a `root` token.
 - `data` The parsed data of the current token, it may not be the final data 
-    since there may be a handler to deal with the current type.
+    since there may be a handler to deal with the current type. If the current
+    token is an object property, the `data` will be an inner SourceToken.
 - `parent` The token of the parent node.
 - `path` The path of the current token, only for object properties and array 
     elements.
