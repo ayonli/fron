@@ -1,6 +1,6 @@
 import get = require("lodash/get");
 import set = require("lodash/set");
-import pick = require("lodash/get");
+import pick = require("lodash/pick");
 import last = require("lodash/last");
 import { normalize, LatinVar } from "./util";
 import { CompoundTypes, getInstance } from "./types";
@@ -110,6 +110,8 @@ function doParseToken(
     cursor: CursorToken,
     listener?: (token: SourceToken) => void
 ): SourceToken {
+    if (!str || cursor.index >= str.length) return;
+
     let char: string;
     let token: SourceToken;
 
@@ -336,7 +338,7 @@ function doParseToken(
                     }
 
                     if (last(matches[0]) === ":") { // property
-                        token.type = "property";
+                        token.type = "string";
 
                         // A property can only appears inside an object.
                         if (parent && parent.type === "Object") {
@@ -376,10 +378,22 @@ function doParseToken(
 
     token.position.end = pick(cursor, ["line", "column"]);
 
-    if (token.parent && token.type === "comment") {
-        token.parent.comments = token.parent.comments || [];
-        token.parent.comments.push(token);
+    if (token.type === "comment") {
+        if (token.parent) {
+            token.parent.comments = token.parent.comments || [];
+            token.parent.comments.push(token);
+        }
+
+        // Recursively calling doParserToken to get nearest non-comment token 
+        // and travel through any potential comments.
+        return doParseToken(str, token.parent, cursor, listener);
     } else if (token.parent && token.parent.type === "Object") { // object
+        if (token.type !== "string" && token.type !== "Symbol" && (
+            token.type !== "number" || typeof token.data === "bigint"
+        )) {
+            throwSyntaxError(token, char);
+        }
+
         let prop = token.data,
             isVar = LatinVar.test(prop),
             prefix = get(token, "parent.parent.path", ""),
@@ -390,12 +404,7 @@ function doParseToken(
         // child node.
         token.path = (prefix || "") + path;
         token.type = "property";
-
-        // Use a while block to parse the property value token, in case there 
-        // are comments before the value node.
-        while (token.data = doParseToken(str, token, cursor, listener)) {
-            if (!token.data || token.data.type !== "comment") break;
-        }
+        token.data = doParseToken(str, token, cursor, listener);
 
         // Append the current node to the parent node as a new property. 
         token.parent.data[prop] = token;
@@ -504,12 +513,32 @@ export function parseToken(
     filename?: string,
     listener?: (token: SourceToken) => void
 ): SourceToken {
-    return str ? doParseToken(str, null, {
+    if (!str) return null;
+
+    let cursor = {
         index: 0,
         line: 1,
         column: 1,
         filename: filename ? normalize(filename) : "<anonymous>"
-    }, listener) : null;
+    };
+    let rootToken = new SourceToken({
+        filename: cursor.filename,
+        position: {
+            start: pick(cursor, ["line", "column"]),
+            end: undefined
+        },
+        type: "root",
+        data: undefined,
+    });
+
+    rootToken.data = doParseToken(str, rootToken, cursor, listener);
+
+    if (cursor.index < str.length) {
+        // If there are remaining characters, try to parse them.
+        doParseToken(str, rootToken, cursor, listener);
+    }
+
+    return rootToken;
 }
 
 /**
@@ -519,5 +548,6 @@ export function parseToken(
  *  position properly. The default value is `<anonymous>`.
  */
 export function parse(str: string, filename?: string): any {
-    return str ? composeToken(parseToken(str, filename)) : void 0;
+    let token = parseToken(str, filename);
+    return token && token.data ? composeToken(token.data) : void 0;
 }

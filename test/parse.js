@@ -1,6 +1,6 @@
 require("source-map-support/register");
 const assert = require("assert");
-const pick = require("object.pick");
+const pick = require("lodash/pick");
 const { parse } = require("..");
 const {
     getData,

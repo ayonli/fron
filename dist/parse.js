@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const get = require("lodash/get");
 const set = require("lodash/set");
-const pick = require("lodash/get");
+const pick = require("lodash/pick");
 const last = require("lodash/last");
 const util_1 = require("./util");
 const types_1 = require("./types");
@@ -24,6 +24,8 @@ function getHandler(type) {
 }
 exports.getHandler = getHandler;
 function doParseToken(str, parent, cursor, listener) {
+    if (!str || cursor.index >= str.length)
+        return;
     let char;
     let token;
     loop: while ((char = str[cursor.index])) {
@@ -179,7 +181,7 @@ function doParseToken(str, parent, cursor, listener) {
                         cursor.column += key.length;
                     }
                     if (last(matches[0]) === ":") {
-                        token.type = "property";
+                        token.type = "string";
                         if (parent && parent.type === "Object") {
                             token.data = key;
                         }
@@ -206,18 +208,21 @@ function doParseToken(str, parent, cursor, listener) {
         }
     }
     token.position.end = pick(cursor, ["line", "column"]);
-    if (token.parent && token.type === "comment") {
-        token.parent.comments = token.parent.comments || [];
-        token.parent.comments.push(token);
+    if (token.type === "comment") {
+        if (token.parent) {
+            token.parent.comments = token.parent.comments || [];
+            token.parent.comments.push(token);
+        }
+        return doParseToken(str, token.parent, cursor, listener);
     }
     else if (token.parent && token.parent.type === "Object") {
+        if (token.type !== "string" && token.type !== "Symbol" && (token.type !== "number" || typeof token.data === "bigint")) {
+            throwSyntaxError(token, char);
+        }
         let prop = token.data, isVar = util_1.LatinVar.test(prop), prefix = get(token, "parent.parent.path", ""), path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
         token.path = (prefix || "") + path;
         token.type = "property";
-        while (token.data = doParseToken(str, token, cursor, listener)) {
-            if (!token.data || token.data.type !== "comment")
-                break;
-        }
+        token.data = doParseToken(str, token, cursor, listener);
         token.parent.data[prop] = token;
     }
     else if (token.parent && token.parent.type === "Array") {
@@ -282,16 +287,33 @@ function composeToken(token) {
 }
 exports.composeToken = composeToken;
 function parseToken(str, filename, listener) {
-    return str ? doParseToken(str, null, {
+    if (!str)
+        return null;
+    let cursor = {
         index: 0,
         line: 1,
         column: 1,
         filename: filename ? util_1.normalize(filename) : "<anonymous>"
-    }, listener) : null;
+    };
+    let rootToken = new SourceToken({
+        filename: cursor.filename,
+        position: {
+            start: pick(cursor, ["line", "column"]),
+            end: undefined
+        },
+        type: "root",
+        data: undefined,
+    });
+    rootToken.data = doParseToken(str, rootToken, cursor, listener);
+    if (cursor.index < str.length) {
+        doParseToken(str, rootToken, cursor, listener);
+    }
+    return rootToken;
 }
 exports.parseToken = parseToken;
 function parse(str, filename) {
-    return str ? composeToken(parseToken(str, filename)) : void 0;
+    let token = parseToken(str, filename);
+    return token && token.data ? composeToken(token.data) : void 0;
 }
 exports.parse = parse;
 //# sourceMappingURL=parse.js.map
