@@ -20,7 +20,7 @@ export const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
  * The interface that carries token details in the FRON string (source), e.g.
  * `filename`, `position`, `type` etc.
  */
-export interface SourceToken {
+export interface SourceToken<T extends string = string> {
     /**
      * The filename that parsed to the parser, if no filename is parsed, the 
      * default value will be `<anonymous>`.
@@ -42,12 +42,14 @@ export interface SourceToken {
     };
     /**
      * The type of the current token, literal types are lower-cased and compound
-     * types are upper-cased.
+     * types are upper-cased. For convenience, every SourceToken parsed is 
+     * carried inside the `root` token.
      */
-    type: string;
+    type: T;
     /**
      * The parsed data of the current token, it may not be the final data since
-     * there may be a handler to deal with the current type.
+     * there may be a handler to deal with the current type. If the current
+     * token is an object property, the `data` will be an inner SourceToken.
      */
     data: any;
     /** The token of the parent node. */
@@ -59,19 +61,18 @@ export interface SourceToken {
     path?: string;
     /**
      * All the comments in the current token. When parsing a comment token, it 
-     * will be appended to the closest parent node, unless the comment is the 
-     * very first token. Comments are not important to the parser and will be 
-     * skipped when composing data.
+     * will be appended to the closest parent node. Comments are not important 
+     * to the parser and will be skipped when composing data.
      */
-    comments?: SourceToken[];
+    comments?: SourceToken<"comment">[];
 }
 
 /**
  * SourceToken is a class constructor as well, it is used to distinguish 
  * the token object from all objects.
  */
-export class SourceToken implements SourceToken {
-    constructor(token: SourceToken) {
+export class SourceToken<T extends string = string> implements SourceToken<T> {
+    constructor(token: SourceToken<T>) {
         Object.assign(this, token);
     }
 }
@@ -381,7 +382,7 @@ function doParseToken(
         throwSyntaxError(token, char);
     } else if (token.type === "comment") {
         parent.comments = parent.comments || [];
-        parent.comments.push(token);
+        parent.comments.push(<SourceToken<"comment">>token);
 
         // Recursively calling doParserToken to get nearest non-comment token 
         // and travel through any potential comments.
@@ -502,7 +503,7 @@ export function composeToken(token: SourceToken): any {
 }
 
 /**
- * Parses the given FRON string into a well-constructed token or token tree.
+ * Parses the given FRON string into a well-constructed token tree.
  * @param filename When parsing data from a file, given that filename to the 
  *  parser, so that if the parser throws syntax error, it could address the 
  *  position properly. The default value is `<anonymous>`.
@@ -513,7 +514,7 @@ export function parseToken(
     str: string,
     filename?: string,
     listener?: (token: SourceToken) => void
-): SourceToken {
+): SourceToken<"root"> {
     let type = typeof str;
 
     if (type !== "string") {
@@ -526,7 +527,7 @@ export function parseToken(
         column: 1,
         filename: filename ? normalize(filename) : "<anonymous>"
     };
-    let rootToken = new SourceToken({
+    let rootToken = new SourceToken<"root">({
         filename: cursor.filename,
         position: {
             start: pick(cursor, ["line", "column"]),

@@ -65,10 +65,10 @@ function parseToken(
     str: string,
     filename?: string,
     listener?: (token: SourceToken) => void
-): SourceToken
+): SourceToken<"root">
 ```
 
-Parses the given FRON string into a well-constructed token or token tree.
+Parses the given FRON string into a well-constructed token tree.
 
 - `filename` When parsing data from a file, given that filename to the parser, 
     so that if the parser throws syntax error, it could address the position 
@@ -87,7 +87,7 @@ Composes a token or token tree to a JavaScript object.
 ## SourceToken
 
 ```typescript
-interface SourceToken {
+interface SourceToken<T extends string = string> {
     filename: string;
     position: {
         start: {
@@ -99,11 +99,11 @@ interface SourceToken {
             column: number
         };
     };
-    type: string;
+    type: T;
     data: any;
     parent?: SourceToken;
     path?: string;
-    comments?: SourceToken[];
+    comments?: SourceToken<"comment">[];
 }
 ```
 
@@ -115,7 +115,7 @@ The interface that carries token details in the FRON string (source).
     and end positions.
 - `type` The type of the current token, by default, literal types are 
     lower-cased and compound types are upper-cased. For convenience, every 
-    SourceToken is carried inside a `root` token.
+    SourceToken parsed is carried inside the `root` token.
 - `data` The parsed data of the current token, it may not be the final data 
     since there may be a handler to deal with the current type. If the current
     token is an object property, the `data` will be an inner SourceToken.
@@ -123,9 +123,8 @@ The interface that carries token details in the FRON string (source).
 - `path` The path of the current token, only for object properties and array 
     elements.
 - `comments` All the comments in the current token. When parsing a comment token,
-    it will be appended to the closest parent node, unless the comment is the 
-    vary first token. Comments are not important to the parser and will be 
-    skipped when composing data.
+    it will be appended to the closest parent node. Comments are not important 
+    to the parser and will be skipped when composing data.
 
 ## FRONEntry
 
