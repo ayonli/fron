@@ -1,5 +1,5 @@
 import get = require("lodash/get");
-import { string } from "literal-toolkit";
+import { string, number } from "literal-toolkit";
 import { LatinVar } from "./util";
 import {
     CompoundTypes,
@@ -17,13 +17,13 @@ function stringifyCommon(
 ): string {
     let type = getType(data);
 
-    if (!type || type == "function") {
+    if (!type || type === "function") {
         return;
-    } else if (type == "null") {
-        return type;
-    } else if (type == "string") {
+    } else if (type === "bigint") {
+        return number.toLiteral(data);
+    } else if (type === "string") {
         return string.toLiteral(data);
-    } else if (type == "Symbol") {
+    } else if (type === "Symbol") {
         return getHandler(type, indent, originalIndent, path, refMap)(data);
     } else if (typeof data === "object") {
         if (refMap.has(data)) {
@@ -39,6 +39,8 @@ function stringifyCommon(
             refMap.set(data, path);
             return getHandler(type, indent, originalIndent, path, refMap)(data);
         }
+    } else if (data !== null && typeof data.toString === "function") {
+        return data.toString();
     } else {
         return String(data);
     }

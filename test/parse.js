@@ -34,10 +34,6 @@ describe("Parser", () => {
         assert.strictEqual(parse(getData("literal-string")), "Hello, World!");
     });
 
-    it("should parse a number literal as expected", () => {
-        assert.strictEqual(parse(getData("literal-number")), 12345);
-    });
-
     it("should parse boolean literals as expected", () => {
         assert.strictEqual(parse(getData("literal-boolean-true")), true);
         assert.strictEqual(parse(getData("literal-boolean-false")), false);
@@ -45,11 +41,6 @@ describe("Parser", () => {
 
     it("should parse a regexp literal as expected", () => {
         assert.deepStrictEqual(parse(getData("literal-regexp")), /[a-z]/i);
-    });
-
-    it("should parse special numbers as expected", () => {
-        assert.ok(isNaN(parse(getData("literal-number-nan"))));
-        assert.strictEqual(parse(getData("literal-number-infinity")), Infinity);
     });
 
     it("should parse a String instance as expected", () => {

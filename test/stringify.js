@@ -39,10 +39,6 @@ describe("Stringifier", () => {
         assert.strictEqual(stringify("Hello, World!"), getData("literal-string"));
     });
 
-    it("should stringify a number literal as expected", () => {
-        assert.strictEqual(stringify(12345), getData("literal-number"));
-    });
-
     it("should stringify boolean literals as expected", () => {
         assert.strictEqual(stringify(true), getData("literal-boolean-true"));
         assert.strictEqual(stringify(false), getData("literal-boolean-false"));
@@ -50,11 +46,6 @@ describe("Stringifier", () => {
 
     it("should stringify a regexp literal as expected", () => {
         assert.strictEqual(stringify(/[a-z]/i), getData("literal-regexp"));
-    });
-
-    it("should stringify special numbers as expected", () => {
-        assert.strictEqual(stringify(NaN), getData("literal-number-nan"));
-        assert.strictEqual(stringify(Infinity), getData("literal-number-infinity"));
     });
 
     it("should stringify a String instance as expected", () => {

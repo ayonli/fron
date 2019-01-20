@@ -6,16 +6,16 @@ const util_1 = require("./util");
 const types_1 = require("./types");
 function stringifyCommon(data, indent, originalIndent, path, refMap) {
     let type = types_1.getType(data);
-    if (!type || type == "function") {
+    if (!type || type === "function") {
         return;
     }
-    else if (type == "null") {
-        return type;
+    else if (type === "bigint") {
+        return literal_toolkit_1.number.toLiteral(data);
     }
-    else if (type == "string") {
+    else if (type === "string") {
         return literal_toolkit_1.string.toLiteral(data);
     }
-    else if (type == "Symbol") {
+    else if (type === "Symbol") {
         return getHandler(type, indent, originalIndent, path, refMap)(data);
     }
     else if (typeof data === "object") {
@@ -26,6 +26,9 @@ function stringifyCommon(data, indent, originalIndent, path, refMap) {
             refMap.set(data, path);
             return getHandler(type, indent, originalIndent, path, refMap)(data);
         }
+    }
+    else if (data !== null && typeof data.toString === "function") {
+        return data.toString();
     }
     else {
         return String(data);

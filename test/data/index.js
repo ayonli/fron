@@ -57,13 +57,12 @@ exports.circularReference.abc.prop2.push(exports.circularReference.abc.prop2);
  */
 function filename(name) {
     let ext = path.extname(name);
-    let basename = path.basename(name, ext);
 
-    if (["js", ".json", ".fron", ".bson"].includes(ext) === false) {
-        ext = ".js";
+    if (ext && [".js", ".json", ".fron", ".bson"].indexOf(ext) >= 0) {
+        return name;
+    } else {
+        return name + ".js";
     }
-
-    return basename + ext;
 }
 
 /**
