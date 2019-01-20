@@ -67,12 +67,15 @@ function filename(name) {
 
 /**
  * @param {string} name 
+ * @param {string} [dirname]
  */
-function getData(name) {
+function getData(name, dirname) {
     /** @type {string} */
     let data;
     try {
-        data = fs.readFileSync(__dirname + "/" + filename(name), { encoding: "utf8" });
+        data = fs.readFileSync((dirname || __dirname) + "/" + filename(name), {
+            encoding: "utf8"
+        });
     } finally {
         return data;
     };
@@ -81,11 +84,14 @@ function getData(name) {
 /**
  * @param {string} name 
  * @param {string} data 
+ * @param {string} [dirname]
  */
-function setData(name, data) {
+function setData(name, data, dirname) {
     let result = false;
     try {
-        fs.writeFileSync(__dirname + "/" + filename(name), data, { encoding: "utf8" });
+        fs.writeFileSync((dirname || __dirname) + "/" + filename(name), data, {
+            encoding: "utf8"
+        });
         result = true;
     } finally {
         return result;
@@ -94,3 +100,14 @@ function setData(name, data) {
 
 exports.getData = getData;
 exports.setData = setData;
+
+/**
+ * @returns {(name: string) => string}
+ */
+exports.createGetter = function createGetter(dirname) {
+    return name => getData(name, dirname);
+};
+
+exports.createSetter = function createSetter(dirname) {
+    return (name, data) => setData(name, data, dirname);
+};

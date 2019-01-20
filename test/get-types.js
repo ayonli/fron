@@ -20,6 +20,11 @@ describe("Get types", () => {
         assert.strictEqual(getType(12345), "number");
     });
 
+    it("should get literal type 'bigint' as expected", () => {
+        if (typeof BigInt === "function")
+            assert.strictEqual(getType(BigInt(12345)), "bigint");
+    });
+
     it("should get literal type 'boolean' as expected", () => {
         assert.strictEqual(getType(true), "boolean");
     });

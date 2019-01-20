@@ -35,41 +35,6 @@ before(() => {
 });
 
 describe("Stringifier", () => {
-    it("should stringify a string literal as expected", () => {
-        assert.strictEqual(stringify("Hello, World!"), getData("literal-string"));
-    });
-
-    it("should stringify boolean literals as expected", () => {
-        assert.strictEqual(stringify(true), getData("literal-boolean-true"));
-        assert.strictEqual(stringify(false), getData("literal-boolean-false"));
-    });
-
-    it("should stringify a regexp literal as expected", () => {
-        assert.strictEqual(stringify(/[a-z]/i), getData("literal-regexp"));
-    });
-
-    it("should stringify a String instance as expected", () => {
-        assert.strictEqual(stringify(new String("Hello, World!")), getData("compound-string"));
-    });
-
-    it("should stringify a Number instance as expected", () => {
-        assert.strictEqual(stringify(new Number(12345)), getData("compound-number"));
-    });
-
-    it("should stringify Boolean instances as expected", () => {
-        assert.strictEqual(stringify(new Boolean(true)), getData("compound-boolean-true"));
-        assert.strictEqual(stringify(new Boolean(false)), getData("compound-boolean-false"));
-    });
-
-    it("should stringify a Symbol instance as expected", () => {
-        assert.strictEqual(stringify(Symbol.for("example")), getData("compound-symbol"));
-    });
-
-    it("should stringify a Date instance as expected", () => {
-        let date = new Date("2019-01-01T00:00:00.000Z");
-        assert.strictEqual(stringify(date), getData("compound-date"));
-    });
-
     it("should stringify an object as expected", () => {
         let data = {
             abc: "Hello, World!",
@@ -124,26 +89,6 @@ describe("Stringifier", () => {
     it("should stringify an array and prettify the output with customized spaces as expected", () => {
         let data = ["Hello, World!", "Hi, Ayon!"];
         assert.strictEqual(stringify(data, "    "), getData("literal-array-3"));
-    });
-
-    it("should stringify a Map instance as expected", () => {
-        let data = new Map([["abc", "Hello, World!"], [{ efg: "Hi, Ayon" }, 1]]);
-        assert.strictEqual(stringify(data), getData("compound-map-1"));
-    });
-
-    it("should stringify a Map instance and prettify the output as expected", () => {
-        let data = new Map([["abc", "Hello, World!"], [{ efg: "Hi, Ayon" }, 1]]);
-        assert.strictEqual(stringify(data, true), getData("compound-map-2"));
-    });
-
-    it("should stringify a Set instance as expected", () => {
-        let data = new Set([["abc", "Hello, World!"], [{ efg: "Hi, Ayon" }, 1]]);
-        assert.strictEqual(stringify(data), getData("compound-set-1"));
-    });
-
-    it("should stringify a Set instance and prettify the output as expected", () => {
-        let data = new Set([["abc", "Hello, World!"], [{ efg: "Hi, Ayon" }, 1]]);
-        assert.strictEqual(stringify(data, true), getData("compound-set-2"));
     });
 
     it("should stringify an Int8Array instance as expected", () => {
