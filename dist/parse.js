@@ -49,12 +49,11 @@ function doParseToken(str, parent, cursor, listener) {
             },
             type: undefined,
             data: undefined,
+            parent
         });
-        if (parent)
-            token.parent = parent;
         switch (char) {
             case ",":
-                if (parent && ["Object", "Array"].indexOf(parent.type) >= 0) {
+                if (parent.type === "Object" || parent.type === "Array") {
                     cursor.index++;
                     cursor.column++;
                 }
@@ -63,7 +62,7 @@ function doParseToken(str, parent, cursor, listener) {
                 }
                 break;
             case ":":
-                if (parent && parent.type === "property") {
+                if (parent.type === "property") {
                     cursor.index++;
                     cursor.column++;
                 }
@@ -72,7 +71,7 @@ function doParseToken(str, parent, cursor, listener) {
                 }
                 break;
             case "(":
-                if (parent) {
+                if (["root", "Object", "Array"].indexOf(parent.type) === -1) {
                     cursor.index++;
                     cursor.column++;
                 }
@@ -81,7 +80,7 @@ function doParseToken(str, parent, cursor, listener) {
                 }
                 break;
             case ")":
-                if (parent) {
+                if (["root", "Object", "Array"].indexOf(parent.type) === -1) {
                     cursor.index++;
                     cursor.column++;
                 }
@@ -100,7 +99,7 @@ function doParseToken(str, parent, cursor, listener) {
                 break loop;
             case "}":
             case "]":
-                if (parent) {
+                if (parent.type === "Object" || parent.type === "Array") {
                     cursor.index++;
                     cursor.column++;
                 }
@@ -182,7 +181,7 @@ function doParseToken(str, parent, cursor, listener) {
                     }
                     if (last(matches[0]) === ":") {
                         token.type = "string";
-                        if (parent && parent.type === "Object") {
+                        if (parent.type === "Object") {
                             token.data = key;
                         }
                         else {
@@ -191,7 +190,7 @@ function doParseToken(str, parent, cursor, listener) {
                     }
                     else {
                         token.type = key;
-                        if (!parent && token.type === "Reference") {
+                        if (parent.type === "root" && key === "Reference") {
                             throwSyntaxError(token, char);
                         }
                         else {
@@ -208,31 +207,33 @@ function doParseToken(str, parent, cursor, listener) {
         }
     }
     token.position.end = pick(cursor, ["line", "column"]);
-    if (token.type === "comment") {
-        if (token.parent) {
-            token.parent.comments = token.parent.comments || [];
-            token.parent.comments.push(token);
-        }
-        return doParseToken(str, token.parent, cursor, listener);
+    if (parent.type === "root" && parent.data !== undefined
+        && token.type !== "comment") {
+        throwSyntaxError(token, char);
     }
-    else if (token.parent && token.parent.type === "Object") {
+    else if (token.type === "comment") {
+        parent.comments = parent.comments || [];
+        parent.comments.push(token);
+        return doParseToken(str, parent, cursor, listener);
+    }
+    else if (parent.type === "Object") {
         if (token.type !== "string" && token.type !== "Symbol" && (token.type !== "number" || typeof token.data === "bigint")) {
             throwSyntaxError(token, char);
         }
-        let prop = token.data, isVar = util_1.LatinVar.test(prop), prefix = get(token, "parent.parent.path", ""), path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
+        let prop = token.data, isVar = util_1.LatinVar.test(prop), prefix = get(parent, "parent.path", ""), path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
         token.path = (prefix || "") + path;
         token.type = "property";
         token.data = doParseToken(str, token, cursor, listener);
-        token.parent.data[prop] = token;
+        parent.data[prop] = token;
     }
-    else if (token.parent && token.parent.type === "Array") {
-        let prefix = get(token, "parent.parent.path", "");
-        token.path = `${prefix}[${token.parent.data.length}]`;
-        token.parent.data.push(token);
+    else if (parent.type === "Array") {
+        let prefix = get(parent, "parent.path", "");
+        token.path = `${prefix}[${parent.data.length}]`;
+        parent.data.push(token);
     }
     listener && listener.call(void 0, token);
-    if (token.parent && ["Object", "Array"].indexOf(token.parent.type) >= 0) {
-        return doParseToken(str, token.parent, cursor, listener);
+    if (parent.type === "Object" || parent.type === "Array") {
+        return doParseToken(str, parent, cursor, listener);
     }
     else {
         return token;
@@ -289,7 +290,11 @@ function composeToken(token) {
 }
 exports.composeToken = composeToken;
 function parseToken(str, filename, listener) {
-    if (!str)
+    let type = typeof str;
+    if (type !== "string") {
+        throw new TypeError(`A string value was expected, ${type} given`);
+    }
+    else if (!str)
         return null;
     let cursor = {
         index: 0,

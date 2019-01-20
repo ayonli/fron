@@ -149,17 +149,14 @@ function doParseToken(
             },
             type: undefined,
             data: undefined,
+            parent // only root token doesn't have parent token.
         });
-
-        // Using this method, so that the parent property won't be always showed
-        // up on the token.
-        if (parent) token.parent = parent;
 
         switch (char) {
             case ",":
                 // A comma (`,`) appears right after a property value in an 
                 // object, or an element in an array.
-                if (parent && ["Object", "Array"].indexOf(parent.type) >= 0) {
+                if (parent.type === "Object" || parent.type === "Array") {
                     cursor.index++;
                     cursor.column++;
                 } else {
@@ -170,7 +167,7 @@ function doParseToken(
             case ":":
                 // A colon (`:`) appears right after a property name in an 
                 // object.
-                if (parent && parent.type === "property") {
+                if (parent.type === "property") {
                     cursor.index++;
                     cursor.column++;
                 } else {
@@ -187,7 +184,7 @@ function doParseToken(
                 // is an pure object literal or array literal.
                 // The parent here is the very type name node of the compound 
                 // type notation.
-                if (parent) {
+                if (["root", "Object", "Array"].indexOf(parent.type) === -1) {
                     cursor.index++;
                     cursor.column++
                 } else {
@@ -198,7 +195,7 @@ function doParseToken(
             case ")":
                 // The closing bracket (`)`) indicates the end position of a 
                 // compound type container, see above.
-                if (parent) {
+                if (["root", "Object", "Array"].indexOf(parent.type) === -1) {
                     cursor.index++;
                     cursor.column++
                 } else {
@@ -235,7 +232,7 @@ function doParseToken(
 
             case "}": // closing sign of an object
             case "]": // closing sign of an array
-                if (parent) {
+                if (parent.type === "Object" || parent.type === "Array") {
                     cursor.index++;
                     cursor.column++;
                 } else {
@@ -341,7 +338,7 @@ function doParseToken(
                         token.type = "string";
 
                         // A property can only appears inside an object.
-                        if (parent && parent.type === "Object") {
+                        if (parent.type === "Object") {
                             token.data = key;
                         } else {
                             throwSyntaxError(token, char);
@@ -349,7 +346,7 @@ function doParseToken(
                     } else { // compound type
                         token.type = key;
 
-                        if (!parent && token.type === "Reference") {
+                        if (parent.type === "root" && key === "Reference") {
                             // A reference type con only appears inside a 
                             // compound type (object, array or something else).
                             throwSyntaxError(token, char);
@@ -361,7 +358,7 @@ function doParseToken(
                                 listener
                             );
 
-                            // Since the token of a customized compound type 
+                            // Since the token of a user-defined compound type 
                             // contains an extra closing bracket ")", and 
                             // potential spaces, using doParseToken() can let 
                             // the cursor travel through them.
@@ -378,16 +375,18 @@ function doParseToken(
 
     token.position.end = pick(cursor, ["line", "column"]);
 
-    if (token.type === "comment") {
-        if (token.parent) {
-            token.parent.comments = token.parent.comments || [];
-            token.parent.comments.push(token);
-        }
+    if (parent.type === "root" && parent.data !== undefined
+        && token.type !== "comment") {
+        // Only trailing comments are allowed after non-comment token.
+        throwSyntaxError(token, char);
+    } else if (token.type === "comment") {
+        parent.comments = parent.comments || [];
+        parent.comments.push(token);
 
         // Recursively calling doParserToken to get nearest non-comment token 
         // and travel through any potential comments.
-        return doParseToken(str, token.parent, cursor, listener);
-    } else if (token.parent && token.parent.type === "Object") { // object
+        return doParseToken(str, parent, cursor, listener);
+    } else if (parent.type === "Object") { // object
         if (token.type !== "string" && token.type !== "Symbol" && (
             token.type !== "number" || typeof token.data === "bigint"
         )) {
@@ -396,7 +395,7 @@ function doParseToken(
 
         let prop = token.data,
             isVar = LatinVar.test(prop),
-            prefix = get(token, "parent.parent.path", ""),
+            prefix = get(parent, "parent.path", ""),
             path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
 
         // If the parent node is an object, that means the current node is a 
@@ -407,23 +406,23 @@ function doParseToken(
         token.data = doParseToken(str, token, cursor, listener);
 
         // Append the current node to the parent node as a new property. 
-        token.parent.data[prop] = token;
-    } else if (token.parent && token.parent.type === "Array") { // array
-        let prefix = get(token, "parent.parent.path", "");
+        parent.data[prop] = token;
+    } else if (parent.type === "Array") { // array
+        let prefix = get(parent, "parent.path", "");
 
         // If the parent node is an array, append the current node to the parent
         // node as its element.
-        token.path = `${prefix}[${token.parent.data.length}]`;
-        token.parent.data.push(token);
+        token.path = `${prefix}[${parent.data.length}]`;
+        parent.data.push(token);
     }
 
     // If there is a listener bound, call it to watch all parsing moments.
     listener && listener.call(void 0, token);
 
-    if (token.parent && ["Object", "Array"].indexOf(token.parent.type) >= 0) {
+    if (parent.type === "Object" || parent.type === "Array") {
         // If the parent node is either object or array, try to parse remaining 
         // tokens as its properties (or elements).
-        return doParseToken(str, token.parent, cursor, listener);
+        return doParseToken(str, parent, cursor, listener);
     } else {
         return token;
     }
@@ -515,7 +514,11 @@ export function parseToken(
     filename?: string,
     listener?: (token: SourceToken) => void
 ): SourceToken {
-    if (!str) return null;
+    let type = typeof str;
+
+    if (type !== "string") {
+        throw new TypeError(`A string value was expected, ${type} given`);
+    } else if (!str) return null;
 
     let cursor = {
         index: 0,
