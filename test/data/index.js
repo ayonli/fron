@@ -128,10 +128,25 @@ exports.createRunner = function createRunner(dirname) {
             .replace(INLINE_COMMENTS, "")
             .replace(BLOCK_COMMENTS, "")
             .replace(/^\n/g, "");
+        let notation = /([A-Z][a-zA-Z0-9]*)\([\s\S]+\)/;
+        let matches;
 
-        if (/[A-Z].*\([\s\S]+\)/.test(code)) {
-            code = "return new " + code;
-            return (new Function(code, type))(type);
+        if ((matches = notation.exec(code))) {
+            let name = matches[1];
+
+            if (type instanceof Function && typeof type.from === "function") {
+                code = `return ${name}.from` + code.slice(name.length);
+            } else if (type instanceof Function && typeof type.for === "function") {
+                code = `return ${name}.for` + code.slice(name.length);
+            } else {
+                code = "return new " + code;
+            }
+
+            if (type instanceof Function) {
+                return (new Function(type.name, code))(type);
+            } else {
+                return (new Function(code))();
+            }
         } else {
             code = "return " + code;
             return (new Function(code))();
