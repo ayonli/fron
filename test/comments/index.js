@@ -1,8 +1,7 @@
 require("source-map-support/register");
 const assert = require("assert");
-const { parse } = require("../../..");
-const { createGetter, createAssertions } = require("..");
-const get = createGetter(__dirname);
+const { parse } = require("../..");
+const { createGetter, createAssertions } = require("../utils");
 const assertions = createAssertions(__dirname);
 
 describe("Parse Comments", () => {

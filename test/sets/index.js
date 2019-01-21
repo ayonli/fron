@@ -1,12 +1,10 @@
 require("source-map-support/register");
 const assert = require("assert");
-const { stringify, parse } = require("../../..");
-const { createGetter, createAssertions, createRunner } = require("..");
+const { stringify, parse } = require("../..");
+const { createGetter, createAssertions, createRunner } = require("../utils");
 const get = createGetter(__dirname);
 const assertions = createAssertions(__dirname);
 const run = createRunner(__dirname);
-
-var data = new Set([["abc", "Hello, World!"], [{ efg: "Hi, Ayon" }, 1]]);
 
 describe("Stringify Set", () => {
     it("should stringify a Set instance as expected", () => {

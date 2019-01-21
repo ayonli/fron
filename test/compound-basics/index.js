@@ -1,7 +1,7 @@
 require("source-map-support/register");
 const assert = require("assert");
-const { stringify, parse } = require("../../..");
-const { createAssertions } = require("..");
+const { stringify, parse } = require("../..");
+const { createAssertions } = require("../utils");
 const assertions = createAssertions(__dirname);
 
 describe("Stringify Basic Compound Types", () => {

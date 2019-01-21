@@ -1,7 +1,7 @@
 require("source-map-support/register");
 const assert = require("assert");
-const { stringify, parse } = require("../../..");
-const { createGetter, createAssertions, createRunner } = require("..");
+const { stringify, parse } = require("../..");
+const { createGetter, createAssertions, createRunner } = require("../utils");
 const get = createGetter(__dirname);
 const assertions = createAssertions(__dirname);
 const run = createRunner(__dirname);

@@ -1,7 +1,7 @@
 require("source-map-support/register");
 const assert = require("assert");
-const { stringify, parse } = require("../../..");
-const { createGetter } = require("..");
+const { stringify, parse } = require("../..");
+const { createGetter } = require("../utils");
 const get = createGetter(__dirname);
 
 describe("Stringify Booleans", () => {
