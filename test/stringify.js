@@ -35,47 +35,6 @@ before(() => {
 });
 
 describe("Stringifier", () => {
-    it("should stringify an object as expected", () => {
-        let data = {
-            abc: "Hello, World!",
-            efg: "Hi, Ayon!"
-        };
-        assert.strictEqual(stringify(data), getData("literal-object-1"));
-    });
-
-    it("should stringify an object with quoted properties as expected", () => {
-        let data = {
-            "a b c": "Hello, World!",
-            "e f g": "Hi, Ayon!",
-            "你好": "世界"
-        };
-        assert.strictEqual(stringify(data), getData("literal-object-2"));
-    });
-
-    it("should stringify an object with numeric properties as expected", () => {
-        let data = {
-            1: "Hello, World!",
-            2: "Hi, Ayon!"
-        };
-        assert.strictEqual(stringify(data), getData("literal-object-3"));
-    });
-
-    it("should stringify an object and prettify the output as expected", () => {
-        let data = {
-            abc: "Hello, World!",
-            efg: "Hi, Ayon!"
-        };
-        assert.strictEqual(stringify(data, true), getData("literal-object-4"));
-    });
-
-    it("should stringify an object and prettify the output with customized spaces as expected", () => {
-        let data = {
-            abc: "Hello, World!",
-            efg: "Hi, Ayon!"
-        };
-        assert.strictEqual(stringify(data, "    "), getData("literal-object-5"));
-    });
-
     it("should stringify an array as expected", () => {
         let data = ["Hello, World!", "Hi, Ayon!"];
         assert.strictEqual(stringify(data), getData("literal-array-1"));

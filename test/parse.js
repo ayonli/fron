@@ -30,47 +30,6 @@ function accessError(err) {
 };
 
 describe("Parser", () => {
-    it("should parse an object as expected", () => {
-        let data = {
-            abc: "Hello, World!",
-            efg: "Hi, Ayon!"
-        };
-        assert.deepStrictEqual(parse(getData("literal-object-1")), data);
-    });
-
-    it("should parse an object with quoted properties as expected", () => {
-        let data = {
-            "a b c": "Hello, World!",
-            "e f g": "Hi, Ayon!",
-            "你好": "世界"
-        };
-        assert.deepStrictEqual(parse(getData("literal-object-2")), data);
-    });
-
-    it("should parse an object with numeric properties as expected", () => {
-        let data = {
-            1: "Hello, World!",
-            2: "Hi, Ayon!"
-        };
-        assert.deepStrictEqual(parse(getData("literal-object-3")), data);
-    });
-
-    it("should parse an object and prettify the output as expected", () => {
-        let data = {
-            abc: "Hello, World!",
-            efg: "Hi, Ayon!"
-        };
-        assert.deepStrictEqual(parse(getData("literal-object-4")), data, true);
-    });
-
-    it("should parse an object and prettify the output with customized spaces as expected", () => {
-        let data = {
-            abc: "Hello, World!",
-            efg: "Hi, Ayon!"
-        };
-        assert.deepStrictEqual(parse(getData("literal-object-5")), data, "    ");
-    });
-
     it("should parse an array as expected", () => {
         let data = ["Hello, World!", "Hi, Ayon!"];
         assert.deepStrictEqual(parse(getData("literal-array-1")), data);

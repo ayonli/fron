@@ -1,3 +1,3 @@
-/* This is an in-line comment */
+// This is a single-line comment
 12345
-/* This is another in-line comment */
+// This is another single-line comment

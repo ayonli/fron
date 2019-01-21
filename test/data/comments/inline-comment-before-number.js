@@ -1,1 +1,2 @@
-/* This is an in-line comment */ 12345
+// This is a single-line comment
+12345

@@ -1,6 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const assert = require("assert");
+const { stringify, parse } = require("../..");
+
+const INLINE_COMMENTS = /\s*\/\/.*\n*?/g;
+const BLOCK_COMMENTS = /\s*\/\*[\s\S]*?\*\//g;
 
 exports.buffer = Buffer.from("Hello, World!");
 exports.int8Array = Int8Array.from(exports.buffer);
@@ -108,6 +112,47 @@ exports.createGetter = function createGetter(dirname) {
     return name => getData(name, dirname);
 };
 
+/**
+ * @returns {(name: string, data: string) => boolean}
+ */
 exports.createSetter = function createSetter(dirname) {
     return (name, data) => setData(name, data, dirname);
+};
+
+/**
+ * @returns {(name: string, type?: Function) => any}
+ */
+exports.createRunner = function createRunner(dirname) {
+    return (name, type) => {
+        let code = getData(name, dirname)
+            .replace(INLINE_COMMENTS, "")
+            .replace(BLOCK_COMMENTS, "")
+            .replace(/^\n/g, "");
+
+        if (/[A-Z].*\([\s\S]+\)/.test(code)) {
+            code = "return new " + code;
+            return (new Function(code, type))(type);
+        } else {
+            code = "return " + code;
+            return (new Function(code))();
+        }
+    };
+};
+
+/**
+ * @returns {(fn: Function, name: string, type?: Function) => [any, any]}
+ */
+exports.createAssertions = function createAssertions(dirname) {
+    let run = exports.createRunner(dirname);
+    let get = exports.createGetter(dirname);
+
+    return (fn, name, type) => {
+        if (fn === stringify) {
+            return [fn(run(name, type)), get(name)];
+        } else if (fn === parse) {
+            return [parse(get(name)), run(name, type)];
+        } else {
+            throw new TypeError("fn must be either stringify or parse");
+        }
+    };
 };
