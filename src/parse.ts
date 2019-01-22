@@ -14,7 +14,7 @@ import {
 } from 'literal-toolkit';
 
 /** A pattern to match Latin properties or type notations. */
-export const TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
+export const PropOrType = /^([a-z_][a-z0-9_]*)\s*:|^([a-z_][a-z0-9_\.]*)\s*\(/i;
 
 /**
  * The interface that carries token details in the FRON string (source), e.g.
@@ -319,9 +319,9 @@ function doParseToken(
                     token.data = dataToken.value;
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
-                } else if (matches = remains.match(TypeOrPorp)) {
+                } else if (matches = remains.match(PropOrType)) {
                     let lines = matches[0].split("\n"),
-                        key = matches[1];
+                        key = matches[1] || matches[2];
 
                     cursor.index += key.length;
                     cursor.line += lines.length - 1;
@@ -335,7 +335,7 @@ function doParseToken(
                         cursor.column += key.length;
                     }
 
-                    if (last(matches[0]) === ":") { // property
+                    if (matches[1] !== undefined) { // property
                         token.type = "string";
 
                         // A property can only appears inside an object.

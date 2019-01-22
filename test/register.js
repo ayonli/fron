@@ -1,7 +1,14 @@
 require("source-map-support/register");
 const assert = require("assert");
 const pick = require("lodash/pick");
-const { register, getInstance, stringify, parse, FRONEntryBase } = require("..");
+const {
+    register,
+    registerNS,
+    getInstance,
+    stringify,
+    parse,
+    FRONEntryBase
+} = require("..");
 
 describe("Register", () => {
     it("should register a class constructor as expected", () => {
@@ -262,6 +269,33 @@ describe("Register", () => {
         assert.ok(getInstance("Animal") instanceof EarthAnimal);
         assert.strictEqual(stringify(new EarthAnimal(data)), fronStr);
         assert.ok(cat instanceof EarthAnimal);
+        assert.deepStrictEqual(Object.assign({}, cat), data);
+    });
+
+    it("should register a type with namespace as expected", () => {
+        class Animal {
+            constructor(data) {
+                Object.assign(this, data);
+            }
+
+            toFRON() {
+                return Object.assign({}, this);
+            }
+
+            fromFRON(data) {
+                return Object.assign(this, data);
+            }
+        }
+
+        registerNS("earth")(Animal);
+
+        let data = { name: "Cat", age: 1 };
+        let fronStr = "earth.Animal({name:\"Cat\",age:1})";
+        let cat = parse(fronStr);
+
+        assert.ok(getInstance("earth.Animal") instanceof Animal);
+        assert.strictEqual(stringify(new Animal(data)), fronStr);
+        assert.ok(cat instanceof Animal);
         assert.deepStrictEqual(Object.assign({}, cat), data);
     });
 });

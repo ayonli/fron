@@ -1,6 +1,6 @@
 {
   "name": "fron",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Feature Rich Object Notation.",
   "main": "dist/index.js",
   "types": "src/index.ts",
@@ -12,9 +12,10 @@
     "url": "git+https://github.com/hyurl/fron.git"
   },
   "keywords": [
-    "json",
-    "jsonc",
-    "bson",
+    "serialize",
+    "deserialize",
+    "stringify",
+    "parse",
     "object",
     "notation",
     "comment",
@@ -23,7 +24,10 @@
     "buffer",
     "map",
     "set",
-    "regexp"
+    "regexp",
+    "json",
+    "jsonc",
+    "bson"
   ],
   "author": "Ayon Lee <i@hyurl.com>",
   "license": "MIT",

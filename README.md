@@ -1,18 +1,18 @@
-# Feature-Rich Object Notation (progressing)
+# Feature-Rich Object Notation (beta)
 
 JSON, even BSON, only supports a few types of objects. FRON (`/frʌn/`), on the 
 other hand, is meant to support as many types as it can, and be feature-rich, 
 especially for data transmission scenarios like IPC, RPC, and data storage, to 
 bring the closest experience on both I/O ends.
 
-*FRON adopts basic JSON style, and is compatible with JSON/BSON/JSONC* 
+*FRON adopts basic JavaScript style, and is compatible with JSON/BSON/JSONC* 
 *<small>(JSON with comments)</small> data.*
 
 Currently these types in JavaScript are considered:
 
 - `Array` Only literal in case of conflict.
 - `Boolean` Both literal and compound type.
-- `comment` JavaScript style comments `//` and `/* */`.
+- `comment` Inline-comments (`// ...`) and block comments (`/* ... */`).
 - `Date`
 - `Error` As well as well other built-in errors.
 - `Map`
@@ -33,7 +33,7 @@ complicated scenarios.
 - `Reference` References to one of the nodes of the object, regardless of 
     circulation.
 
-While in NodeJS, these types are also pre-registered for support.
+While in NodeJS, these types are also pre-registered to support.
 
 - `Buffer`
 - `AssertionError`

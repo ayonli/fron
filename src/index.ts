@@ -24,3 +24,11 @@ export {
     getType,
     getInstance
 };
+
+/**
+ * A decorator used to register a type (class constructor) with a specified 
+ * namespace.
+ */
+export function registerNS(nsp: string) {
+    return (ctor: FRONConstructor) => register(`${nsp}.${ctor.name}`, ctor);
+}

@@ -7,7 +7,7 @@ const last = require("lodash/last");
 const util_1 = require("./util");
 const types_1 = require("./types");
 const literal_toolkit_1 = require("literal-toolkit");
-exports.TypeOrPorp = /^([a-z_][a-z0-9_]*)\s*[:\(]/i;
+exports.PropOrType = /^([a-z_][a-z0-9_]*)\s*:|^([a-z_][a-z0-9_\.]*)\s*\(/i;
 class SourceToken {
     constructor(token) {
         Object.assign(this, token);
@@ -169,8 +169,8 @@ function doParseToken(str, parent, cursor, listener) {
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
                 }
-                else if (matches = remains.match(exports.TypeOrPorp)) {
-                    let lines = matches[0].split("\n"), key = matches[1];
+                else if (matches = remains.match(exports.PropOrType)) {
+                    let lines = matches[0].split("\n"), key = matches[1] || matches[2];
                     cursor.index += key.length;
                     cursor.line += lines.length - 1;
                     if (lines.length > 1) {
@@ -179,7 +179,7 @@ function doParseToken(str, parent, cursor, listener) {
                     else {
                         cursor.column += key.length;
                     }
-                    if (last(matches[0]) === ":") {
+                    if (matches[1] !== undefined) {
                         token.type = "string";
                         if (parent.type === "Object") {
                             token.data = key;

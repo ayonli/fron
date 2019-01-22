@@ -35,6 +35,17 @@ register("Student", User);
 register("Student", "User");
 ```
 
+## registerNS
+
+```typescript
+function registerNS(nsp: string): (ctor: FRONConstructor) => void
+```
+
+A decorator used to register a type (class constructor) with a specified 
+namespace.
+
+**NOTE:** `register` can be used as a decorator as well.
+
 ## stringify
 
 ```typescript

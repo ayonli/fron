@@ -13,4 +13,8 @@ exports.FRONEntryBase = types_1.FRONEntryBase;
 exports.FRONString = types_1.FRONString;
 exports.getType = types_1.getType;
 exports.getInstance = types_1.getInstance;
+function registerNS(nsp) {
+    return (ctor) => types_1.register(`${nsp}.${ctor.name}`, ctor);
+}
+exports.registerNS = registerNS;
 //# sourceMappingURL=index.js.map
