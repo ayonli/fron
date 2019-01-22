@@ -48,4 +48,36 @@ describe("Parse Objects", () => {
     it("should parse an object with custom pretty format as expected", () => {
         assert.deepStrictEqual(...assertions(parse, "custom-pretty"));
     });
+
+    it("should parse an object with inline comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-inline-comment"));
+    });
+
+    it("should parse an object with leading comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-leading-comment"));
+    });
+
+    it("should parse an object with trailing comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-trailing-comment"));
+    });
+
+    it("should parse an object with block comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-block-comment"));
+    });
+
+    it("should parse an object with leading block comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-leading-block-comment"));
+    });
+
+    it("should parse an object with trailing block comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-trailing-block-comment"));
+    });
+
+    it("should parse an object with inline block comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-inline-block-comment"));
+    });
+
+    it("should parse an object with bad format as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "bad-format"));
+    });
 });

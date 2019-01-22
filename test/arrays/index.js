@@ -6,7 +6,7 @@ const get = createGetter(__dirname);
 const run = createRunner(__dirname);
 const assertions = createAssertions(__dirname);
 
-describe("Stringify Objects", () => {
+describe("Stringify Arrays", () => {
     it("should stringify an array with no spaces as expected", () => {
         assert.strictEqual(...assertions(stringify, "no-space"));
     });
@@ -20,7 +20,7 @@ describe("Stringify Objects", () => {
     });
 });
 
-describe("Parse Objects", () => {
+describe("Parse Arrays", () => {
     it("should parse an array with with no spaces as expected", () => {
         assert.deepStrictEqual(...assertions(parse, "no-space"));
     });
@@ -31,5 +31,37 @@ describe("Parse Objects", () => {
 
     it("should parse an array with custom pretty format as expected", () => {
         assert.deepStrictEqual(...assertions(parse, "custom-pretty"));
+    });
+
+    it("should parse an array with inline comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-inline-comment"));
+    });
+
+    it("should parse an array with leading comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-leading-comment"));
+    });
+
+    it("should parse an array with trailing comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-trailing-comment"));
+    });
+
+    it("should parse an array with block comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-block-comment"));
+    });
+
+    it("should parse an array with leading block comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-leading-block-comment"));
+    });
+
+    it("should parse an array with trailing block comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-trailing-block-comment"));
+    });
+
+    it("should parse an array with inline block comment as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "with-inline-block-comment"));
+    });
+
+    it("should parse an array with bad format as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "bad-format"));
     });
 });

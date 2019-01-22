@@ -206,6 +206,8 @@ function doParseToken(str, parent, cursor, listener) {
                 break loop;
         }
     }
+    if (!token)
+        return;
     token.position.end = pick(cursor, ["line", "column"]);
     if (parent.type === "root" && parent.data !== undefined
         && token.type !== "comment") {

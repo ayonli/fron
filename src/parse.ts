@@ -374,6 +374,8 @@ function doParseToken(
         }
     }
 
+    if (!token) return; // EOF with new-line(s)
+
     token.position.end = pick(cursor, ["line", "column"]);
 
     if (parent.type === "root" && parent.data !== undefined

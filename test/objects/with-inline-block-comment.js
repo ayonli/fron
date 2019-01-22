@@ -1,0 +1,1 @@
+/*This is a inline-block comment*/{/*continuous comment*/foo: "bar"/*continuous comment*/}
