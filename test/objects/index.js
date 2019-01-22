@@ -80,4 +80,8 @@ describe("Parse Objects", () => {
     it("should parse an object with bad format as expected", () => {
         assert.deepStrictEqual(...assertions(parse, "bad-format"));
     });
+
+    it("should parse an object with extra comma as expected", () => {
+        assert.deepStrictEqual(...assertions(parse, "bad-format"));
+    });
 });
