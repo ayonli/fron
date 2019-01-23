@@ -12,7 +12,7 @@
     err: TypeError({
         name: "TypeError",
         message: "something went wrong",
-        stack: "TypeError: something went wrong\\n    at Object.<anonymous> (I:\\git\\fron\\test\\common.js:30:24)\\n    at Module._compile (module.js:652:30)\\n    at Object.Module._extensions..js (module.js:663:10)\\n    at Module.load (module.js:565:32)\\n    at tryModuleLoad (module.js:505:12)\\n    at Function.Module._load (module.js:497:3)\\n    at Module.require (module.js:596:17)\\n    at require (internal/module.js:11:18)\\n    at Object.<anonymous> (I:\\git\\fron\\test\\stringify.js:1:24)\\n    at Module._compile (module.js:652:30)",
+        stack: "TypeError: something went wrong\n    at Object.<anonymous> (I:\\git\\fron\\test\\common.js:30:24)\n    at Module._compile (module.js:652:30)\n    at Object.Module._extensions..js (module.js:663:10)\n    at Module.load (module.js:565:32)\n    at tryModuleLoad (module.js:505:12)\n    at Function.Module._load (module.js:497:3)\n    at Module.require (module.js:596:17)\n    at require (internal/module.js:11:18)\n    at Object.<anonymous> (I:\\git\\fron\\test\\stringify.js:1:24)\n    at Module._compile (module.js:652:30)",
         code: 500
     }),
     bool: true,
