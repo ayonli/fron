@@ -19,6 +19,8 @@ function stringifyCommon(
 
     if (!type || type === "function") {
         return;
+    } else if (type === "null") {
+        return type;
     } else if (type === "bigint") {
         return number.toLiteral(data);
     } else if (type === "string") {
@@ -39,7 +41,7 @@ function stringifyCommon(
             refMap.set(data, path);
             return getHandler(type, indent, originalIndent, path, refMap)(data);
         }
-    } else if (data !== null && typeof data.toString === "function") {
+    } else if (typeof data.toString === "function") {
         return data.toString();
     } else {
         return String(data);
@@ -126,6 +128,10 @@ function getHandler(
     } else {
         return (data: any) => {
             let handler: Function;
+
+            if (data === null) {
+                console.log(type)
+            }
 
             if (typeof data.toFRON == "function") {
                 // If the given object includes a `toFRON()` method, call it and

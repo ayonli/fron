@@ -9,6 +9,9 @@ function stringifyCommon(data, indent, originalIndent, path, refMap) {
     if (!type || type === "function") {
         return;
     }
+    else if (type === "null") {
+        return type;
+    }
     else if (type === "bigint") {
         return literal_toolkit_1.number.toLiteral(data);
     }
@@ -27,7 +30,7 @@ function stringifyCommon(data, indent, originalIndent, path, refMap) {
             return getHandler(type, indent, originalIndent, path, refMap)(data);
         }
     }
-    else if (data !== null && typeof data.toString === "function") {
+    else if (typeof data.toString === "function") {
         return data.toString();
     }
     else {
@@ -83,6 +86,9 @@ function getHandler(type, indent, originalIndent, path, refMap) {
     else {
         return (data) => {
             let handler;
+            if (data === null) {
+                console.log(type);
+            }
             if (typeof data.toFRON == "function") {
                 data = data.toFRON();
             }

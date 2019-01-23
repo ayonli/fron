@@ -84,4 +84,9 @@ describe("Parse Objects", () => {
     it("should parse an object with extra comma as expected", () => {
         assert.deepStrictEqual(...assertions(parse, "bad-format"));
     });
+
+    it("should parse an object with complicated-construction as expected", () => {
+        let str = get("complicated-construction");
+        assert.strictEqual(stringify(parse(str), "    "), str);
+    });
 });
