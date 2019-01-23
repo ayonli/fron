@@ -46,7 +46,7 @@
     "webpack-cli": "^3.2.1"
   },
   "dependencies": {
-    "literal-toolkit": "^1.2.5",
+    "literal-toolkit": "^1.2.6",
     "lodash": "^4.17.11"
   },
   "engines": {
