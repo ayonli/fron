@@ -129,10 +129,6 @@ function getHandler(
         return (data: any) => {
             let handler: Function;
 
-            if (data === null) {
-                console.log(type)
-            }
-
             if (typeof data.toFRON == "function") {
                 // If the given object includes a `toFRON()` method, call it and
                 // get the returning value as the data to be stringified.

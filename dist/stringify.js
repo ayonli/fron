@@ -86,9 +86,6 @@ function getHandler(type, indent, originalIndent, path, refMap) {
     else {
         return (data) => {
             let handler;
-            if (data === null) {
-                console.log(type);
-            }
             if (typeof data.toFRON == "function") {
                 data = data.toFRON();
             }
