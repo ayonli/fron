@@ -7,6 +7,7 @@ exports.parse = parse_1.parse;
 exports.parseToken = parse_1.parseToken;
 exports.composeToken = parse_1.composeToken;
 exports.SourceToken = parse_1.SourceToken;
+exports.throwSyntaxError = parse_1.throwSyntaxError;
 const types_1 = require("./types");
 exports.register = types_1.register;
 exports.FRONEntryBase = types_1.FRONEntryBase;

@@ -89,10 +89,9 @@ export interface CursorToken {
  * Throws syntax error when the current token is invalid and terminate the 
  * parser immediately.
  */
-export function throwSyntaxError(token: SourceToken, char: string) {
-    let filename = token.filename,
-        type = token.type ? token.type + " token" : "token " + char,
-        { line, column } = token.position.start;
+export function throwSyntaxError(token: SourceToken, char?: string): never {
+    let { filename, type, position: { start: { line, column } } } = token;
+    type = type ? `${type} token` : (char ? `token ${char}` : "token");
     throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
 }
 

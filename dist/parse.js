@@ -15,7 +15,8 @@ class SourceToken {
 }
 exports.SourceToken = SourceToken;
 function throwSyntaxError(token, char) {
-    let filename = token.filename, type = token.type ? token.type + " token" : "token " + char, { line, column } = token.position.start;
+    let { filename, type, position: { start: { line, column } } } = token;
+    type = type ? `${type} token` : (char ? `token ${char}` : "token");
     throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
 }
 exports.throwSyntaxError = throwSyntaxError;

@@ -199,3 +199,14 @@ registered, this function calls `Object.create()` to create instance, so the
 constructor will not be called automatically.
 
 NOTE: This function may return `undefined` if the given type isn't registered.
+
+## throwSyntaxError
+
+```typescript
+function throwSyntaxError(token: SourceToken, char?: string): never
+```
+
+Throws syntax error when the current token is invalid and terminate the parser 
+immediately.
+
+NOTE: This is function is used when implementing a new parser.

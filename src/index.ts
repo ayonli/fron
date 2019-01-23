@@ -1,5 +1,11 @@
 import { stringify } from "./stringify";
-import { parse, parseToken, composeToken, SourceToken } from "./parse";
+import {
+    parse,
+    parseToken,
+    composeToken,
+    SourceToken,
+    throwSyntaxError
+} from "./parse";
 import {
     register,
     FRONEntry,
@@ -22,7 +28,8 @@ export {
     FRONConstructor,
     FRONString,
     getType,
-    getInstance
+    getInstance,
+    throwSyntaxError
 };
 
 /**
