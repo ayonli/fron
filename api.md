@@ -50,6 +50,7 @@ namespace.
 
 ```typescript
 function stringify(data: any, pretty?: boolean | string): string
+function stringifyAsync(data: any, pretty?: boolean | string): Promise<string>
 ```
 
 Stringifies the given data into a FRON string.
@@ -61,6 +62,7 @@ Stringifies the given data into a FRON string.
 
 ```typescript
 function parse(str: string, filename?: string): any
+function parseAsync(data: string, filename?: string): Promise<any>
 ```
 
 Parses the given FRON string to JavaScript object.
@@ -77,6 +79,12 @@ function parseToken(
     filename?: string,
     listener?: (token: SourceToken) => void
 ): SourceToken<"root">
+
+function parseTokenAsync(
+    str: string,
+    filename?: string,
+    listener?: (token: SourceToken) => void
+): Promise<SourceToken<"root">>
 ```
 
 Parses the given FRON string into a well-constructed token tree.

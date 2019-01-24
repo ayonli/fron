@@ -7,6 +7,84 @@ import {
     getType,
 } from './types';
 
+/**
+ * Gets the favor data construction for stringifing, and calls the `toFRON()` 
+ * method it provided.
+ * */
+export function getFavorData(data: any, type: string) {
+    let handler: Function;
+
+    if (typeof data.toFRON == "function") {
+        // If the given object includes a `toFRON()` method, call it and
+        // get the returning value as the data to be stringified.
+        data = data.toFRON();
+    } else if (handler = get(CompoundTypes[type], "prototype.toFRON")) {
+        // If there is a customized handler registered to deal with the 
+        // type, apply it to the data. The reason to call `apply()` 
+        // instead of calling the method directly is that the handler 
+        // method may not exist on the data instance, it may be 
+        // registered with an object as prototype in the first place.
+        data = handler.apply(data);
+    } else if (data.constructor !== Object) {
+        // If no handler is found, stringify the data as an ordinary 
+        // object with only its enumerable properties.
+        data = Object.assign({}, data);
+    }
+
+    return data;
+}
+
+/** A container to store object notations. */
+export class ObjectNotationContainer {
+    private container: string[] = [];
+
+    constructor(
+        private type: "Object" | "Array",
+        private indent: string,
+        private originalIndent: string
+    ) { }
+
+    /** Pushes data into the container. */
+    push(value: string, key?: string) {
+        if (value === undefined) return;
+
+        if (this.type === "Object") {
+            if (this.indent)
+                this.container.push(`${key}: ${value}`);
+            else
+                this.container.push(`${key}:${value}`);
+        } else if (this.type === "Array") {
+            this.container.push(value);
+        }
+    }
+
+    /** Gets the stringified result of the notation. */
+    toString(): string {
+        let { type, container, indent, originalIndent } = this;
+        let str: string;
+
+        if (type === "Object") {
+            if (indent && container.length) { // use indentation
+                str = "{\n"
+                    + indent + container.join(",\n" + indent) + "\n"
+                    + indent.slice(0, -originalIndent.length) + "}";
+            } else {
+                str = "{" + container.join(",") + "}";
+            }
+        } else if (type === "Array") {
+            if (indent && container.length) { // use indentation
+                str = "[\n"
+                    + indent + container.join(",\n" + indent) + "\n"
+                    + indent.slice(0, -originalIndent.length) + "]";
+            } else {
+                str = "[" + container.join(",") + "]";
+            }
+        }
+
+        return str;
+    }
+}
+
 /** Stringifies any type of data in a common way. */
 function stringifyCommon(
     data: any,
@@ -58,109 +136,72 @@ function getHandler(
 ): (data: any) => string {
     var handlers = {
         "Object": (data: any) => {
-            let container: string[] = [];
-
-            if (typeof data.toFRON == "function") {
-                // If the given object includes a `toFRON()` method, call it and
-                // get the returning value as the data to be stringified.
-                data = data.toFRON();
-            }
+            data = getFavorData(data, "Object");
 
             if (data === undefined) return;
+
+            let container = new ObjectNotationContainer(
+                "Object",
+                indent,
+                originalIndent
+            );
 
             // Stringify all enumerable properties of the object.
             for (let x in data) {
                 let isVar = LatinVar.test(x),
                     prop = isVar ? x : `['${x}']`,
-                    res = stringifyCommon(
-                        data[x],
-                        indent + originalIndent,
-                        originalIndent,
-                        path + (isVar && path ? "." : "") + prop,
-                        refMap
-                    );
+                    key = isVar ? x : stringify(x);
 
-                if (res === undefined)
-                    continue; // If the result returns undefined, skip it.
-                else if (indent)
-                    container.push((isVar ? x : stringify(x)) + `: ${res}`);
-                else
-                    container.push((isVar ? x : stringify(x)) + `:${res}`);
+                container.push(stringifyCommon(
+                    data[x],
+                    indent + originalIndent,
+                    originalIndent,
+                    path + (isVar && path ? "." : "") + prop,
+                    refMap
+                ), key);
             }
 
-            if (indent && container.length) { // use indentation
-                return "{\n"
-                    + indent + container.join(",\n" + indent) + "\n"
-                    + indent.slice(0, -originalIndent.length) + "}";
-            } else {
-                return "{" + container.join(",") + "}";
-            }
+            return container.toString();
         },
         "Array": (data: any[]) => {
-            let container: string[] = [];
+            let container = new ObjectNotationContainer(
+                "Array",
+                indent,
+                originalIndent
+            );
 
             // Only stringify iterable elements of the array.
-            for (let i = 0; i < data.length; i++) {
-                let res = stringifyCommon(
+            for (let i = 0, len = data.length; i < len; ++i) {
+                container.push(stringifyCommon(
                     data[i],
                     indent + originalIndent,
                     originalIndent,
                     `${path}[${i}]`,
                     refMap
-                );
-
-                // skip undefined result
-                (res !== undefined) && container.push(res);
+                ));
             }
 
-            if (indent && container.length) { // use indentation
-                return "[\n"
-                    + indent + container.join(",\n" + indent) + "\n"
-                    + indent.slice(0, -originalIndent.length) + "]";
-            } else {
-                return "[" + container.join(",") + "]";
-            }
-        },
+            return container.toString();
+        }
     };
 
-    if (handlers[type]) {
-        return handlers[type];
-    } else {
-        return (data: any) => {
-            let handler: Function;
+    return handlers[type] || ((data: any) => {
+        data = getFavorData(data, type);
 
-            if (typeof data.toFRON == "function") {
-                // If the given object includes a `toFRON()` method, call it and
-                // get the returning value as the data to be stringified.
-                data = data.toFRON();
-            } else if (handler = get(CompoundTypes[type], "prototype.toFRON")) {
-                // If there is a customized handler registered to deal with the 
-                // type, apply it to the data. The reason to call `apply()` 
-                // instead of calling the method directly is that the handler 
-                // method may not exist on the data instance, it may be 
-                // registered with an object as prototype in the first place.
-                data = handler.apply(data);
-            } else {
-                // If no handler is found, stringify the data as an ordinary 
-                // object with only its enumerable properties.
-                data = Object.assign({}, data);
-            }
-
-            if (data === undefined) {
-                return;
-            } else if (data instanceof FRONString) {
-                return data.valueOf();
-            } else {
-                return type + "(" + stringifyCommon(
-                    data,
-                    indent,
-                    originalIndent,
-                    path,
-                    refMap
-                ) + ")";
-            }
+        if (data === undefined) {
+            return;
+        } else if (data instanceof FRONString) {
+            return data.valueOf();
+        } else {
+            return type + "(" + stringifyCommon(
+                data,
+                indent,
+                originalIndent,
+                path,
+                refMap
+            ) + ")";
         }
-    }
+    });
 }
 
 /**

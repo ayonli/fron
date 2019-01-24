@@ -1,9 +1,15 @@
 import get = require("lodash/get");
-import set = require("lodash/set");
 import pick = require("lodash/pick");
 import last = require("lodash/last");
-import { normalize, LatinVar } from "./util";
-import { CompoundTypes, getInstance } from "./types";
+import { LatinVar } from "../util";
+import {
+    SourceToken,
+    CursorToken,
+    throwSyntaxError,
+    PropOrType,
+    prepareParser,
+    composeToken
+} from "../parse";
 import {
     LiteralToken,
     string,
@@ -13,103 +19,12 @@ import {
     keyword
 } from 'literal-toolkit';
 
-/** A pattern to match Latin properties or type notations. */
-export const PropOrType = /^([a-z_][a-z0-9_]*)\s*:|^([a-z_][a-z0-9_\.]*)\s*\(/i;
-
-/**
- * The interface that carries token details in the FRON string (source), e.g.
- * `filename`, `position`, `type` etc.
- */
-export interface SourceToken<T extends string = string> {
-    /**
-     * The filename that parsed to the parser, if no filename is parsed, the 
-     * default value will be `<anonymous>`.
-     */
-    filename: string;
-    /**
-     * The appearing position of the current token, includes both start and end 
-     * positions.
-     */
-    position: {
-        start: {
-            line: number,
-            column: number
-        };
-        end: {
-            line: number,
-            column: number
-        };
-    };
-    /**
-     * The type of the current token, literal types are lower-cased and compound
-     * types are upper-cased. For convenience, every SourceToken parsed is 
-     * carried inside the `root` token.
-     */
-    type: T;
-    /**
-     * The parsed data of the current token, it may not be the final data since
-     * there may be a handler to deal with the current type. If the current
-     * token is an object property, the `data` will be an inner SourceToken.
-     */
-    data: any;
-    /** The token of the parent node. */
-    parent?: SourceToken;
-    /**
-     * The path of the current token, only for object properties and array 
-     * elements.
-     */
-    path?: string;
-    /**
-     * All the comments in the current token. When parsing a comment token, it 
-     * will be appended to the closest parent node. Comments are not important 
-     * to the parser and will be skipped when composing data.
-     */
-    comments?: SourceToken<"comment">[];
-}
-
-/**
- * SourceToken is a class constructor as well, it is used to distinguish 
- * the token object from all objects.
- */
-export class SourceToken<T extends string = string> implements SourceToken<T> {
-    constructor(token: SourceToken<T>) {
-        Object.assign(this, token);
-    }
-}
-
-/** Carries details of the current position of the parsing cursor. */
-export interface CursorToken {
-    index: number;
-    line: number;
-    column: number;
-    filename: string;
-}
-
-/**
- * Throws syntax error when the current token is invalid and terminate the 
- * parser immediately.
- */
-export function throwSyntaxError(token: SourceToken, char?: string): never {
-    let { filename, type, position: { start: { line, column } } } = token;
-    type = type ? `${type} token` : (char ? `token ${char}` : "token");
-    throw new SyntaxError(`Unexpected ${type} in ${filename}:${line}:${column}`);
-}
-
-/**
- * Gets the customized handler of the given type for parsing, may return 
- * undefined if no handler is registered.
- */
-export function getHandler(type: string): (data: any) => any {
-    return get(CompoundTypes[type], "prototype.fromFRON");
-}
-
-/** Parses every token in the FRON string. */
-function doParseToken(
+async function doParseToken(
     str: string,
     parent: SourceToken,
     cursor: CursorToken,
     listener?: (token: SourceToken) => void
-): SourceToken {
+): Promise<SourceToken> {
     if (!str || cursor.index >= str.length) return;
 
     let char: string;
@@ -227,7 +142,7 @@ function doParseToken(
                 // not a copy, when parsing inner tokens and move the cursor, 
                 // the outside node will follow the cursor, and keep parsing
                 // from where the inner nodes ends.
-                doParseToken(str, token, cursor, listener);
+                await doParseToken(str, token, cursor, listener);
                 break loop;
 
             case "}": // closing sign of an object
@@ -351,7 +266,7 @@ function doParseToken(
                             // compound type (object, array or something else).
                             throwSyntaxError(token, char);
                         } else {
-                            token.data = doParseToken(
+                            token.data = await doParseToken(
                                 str,
                                 token,
                                 cursor,
@@ -362,7 +277,7 @@ function doParseToken(
                             // contains an extra closing bracket ")", and 
                             // potential spaces, using doParseToken() can let 
                             // the cursor travel through them.
-                            doParseToken(str, token, cursor);
+                            await doParseToken(str, token, cursor);
                         }
                     }
                 } else {
@@ -405,7 +320,7 @@ function doParseToken(
         // child node.
         token.path = (prefix || "") + path;
         token.type = "property";
-        token.data = doParseToken(str, token, cursor, listener);
+        token.data = await doParseToken(str, token, cursor, listener);
 
         // Append the current node to the parent node as a new property. 
         parent.data[prop] = token;
@@ -431,108 +346,6 @@ function doParseToken(
 }
 
 /**
- * Composes all tokens (include children nodes) to a JavaScript object and 
- * gather all references into a map.
- */
-function compose(token: SourceToken, refMap: { [path: string]: string }): any {
-    let data: any;
-
-    if (!token) return;
-
-    switch (token.type) {
-        case "Object":
-            data = {};
-            for (let prop in token.data) {
-                // Every property in an object token is also SourceToken, which
-                // should be composed recursively.
-                data[prop] = compose(token.data[prop].data, refMap);
-            }
-            break;
-
-        case "Array":
-            data = [];
-            for (let item of token.data) {
-                // Every element in an array token is also SourceToken, which
-                // should be composed recursively.
-                data.push(compose(item, refMap));
-            }
-            break;
-
-        case "Reference":
-            // The data contained by Reference is a SourceToken with string,
-            // which should be composed first before using it.
-            if (token.parent.type === "Array") {
-                refMap[token.path] = compose(token.data, refMap);
-            } else { // property
-                refMap[token.parent.path] = compose(token.data, refMap);
-            }
-            break;
-
-        default:
-            if (token.data instanceof SourceToken) {
-                let handle = getHandler(token.type),
-                    inst = getInstance(token.type);
-
-                data = compose(token.data, refMap); // try to compose first
-
-                // Try to call registered parsing handler to get expected data.
-                data = handle
-                    ? handle.call(inst || data, data)
-                    : data;
-            } else if (token.type !== "comment") {
-                data = token.data;
-            }
-            break;
-    }
-
-    return data;
-}
-
-/** Composes a token or token tree to a JavaScript object. */
-export function composeToken(token: SourceToken): any {
-    let refMap = {},
-        data = compose(token.type === "root" ? token.data : token, refMap);
-
-    // Sets all references according to the map.
-    for (let path in refMap) {
-        let target = refMap[path];
-        let ref = target ? get(data, target) : data;
-        set(data, path, ref);
-    }
-
-    return data;
-}
-
-/** Gets the root token (and the cursor) of the given FRON string. */
-export function prepareParser(str: string, filename: string): [
-    SourceToken<"root">,
-    CursorToken
-] {
-    let type = typeof str;
-
-    if (type !== "string") {
-        throw new TypeError(`A string value was expected, ${type} given`);
-    } else if (!str) return null;
-
-    let cursor = {
-        index: 0,
-        line: 1,
-        column: 1,
-        filename: filename ? normalize(filename) : "<anonymous>"
-    };
-
-    return [new SourceToken<"root">({
-        filename: cursor.filename,
-        position: {
-            start: pick(cursor, ["line", "column"]),
-            end: undefined
-        },
-        type: "root",
-        data: undefined,
-    }), cursor];
-}
-
-/**
  * Parses the given FRON string into a well-constructed token tree.
  * @param filename When parsing data from a file, given that filename to the 
  *  parser, so that if the parser throws syntax error, it could address the 
@@ -540,18 +353,18 @@ export function prepareParser(str: string, filename: string): [
  * @param listener If set, it will be called when parsing every token in the 
  *  FRON string, and be helpful for programmatic usage.
  */
-export function parseToken(
+export async function parseTokenAsync(
     str: string,
     filename?: string,
     listener?: (token: SourceToken) => void
-): SourceToken<"root"> {
+): Promise<SourceToken<"root">> {
     let [rootToken, cursor] = prepareParser(str, filename);
 
-    rootToken.data = doParseToken(str, rootToken, cursor, listener);
+    rootToken.data = await doParseToken(str, rootToken, cursor, listener);
 
     if (cursor.index < str.length) {
         // If there are remaining characters, try to parse them.
-        doParseToken(str, rootToken, cursor, listener);
+        await doParseToken(str, rootToken, cursor, listener);
     }
 
     return rootToken;
@@ -563,6 +376,6 @@ export function parseToken(
  *  parser, so that if the parser throws syntax error, it could address the 
  *  position properly. The default value is `<anonymous>`.
  */
-export function parse(str: string, filename?: string): any {
-    return composeToken(parseToken(str, filename));
+export async function parseAsync(str: string, filename?: string): Promise<any> {
+    return composeToken(await parseTokenAsync(str, filename));
 }

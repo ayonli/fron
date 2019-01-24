@@ -4,6 +4,67 @@ const get = require("lodash/get");
 const literal_toolkit_1 = require("literal-toolkit");
 const util_1 = require("./util");
 const types_1 = require("./types");
+function getFavorData(data, type) {
+    let handler;
+    if (typeof data.toFRON == "function") {
+        data = data.toFRON();
+    }
+    else if (handler = get(types_1.CompoundTypes[type], "prototype.toFRON")) {
+        data = handler.apply(data);
+    }
+    else if (data.constructor !== Object) {
+        data = Object.assign({}, data);
+    }
+    return data;
+}
+exports.getFavorData = getFavorData;
+class ObjectNotationContainer {
+    constructor(type, indent, originalIndent) {
+        this.type = type;
+        this.indent = indent;
+        this.originalIndent = originalIndent;
+        this.container = [];
+    }
+    push(value, key) {
+        if (value === undefined)
+            return;
+        if (this.type === "Object") {
+            if (this.indent)
+                this.container.push(`${key}: ${value}`);
+            else
+                this.container.push(`${key}:${value}`);
+        }
+        else if (this.type === "Array") {
+            this.container.push(value);
+        }
+    }
+    toString() {
+        let { type, container, indent, originalIndent } = this;
+        let str;
+        if (type === "Object") {
+            if (indent && container.length) {
+                str = "{\n"
+                    + indent + container.join(",\n" + indent) + "\n"
+                    + indent.slice(0, -originalIndent.length) + "}";
+            }
+            else {
+                str = "{" + container.join(",") + "}";
+            }
+        }
+        else if (type === "Array") {
+            if (indent && container.length) {
+                str = "[\n"
+                    + indent + container.join(",\n" + indent) + "\n"
+                    + indent.slice(0, -originalIndent.length) + "]";
+            }
+            else {
+                str = "[" + container.join(",") + "]";
+            }
+        }
+        return str;
+    }
+}
+exports.ObjectNotationContainer = ObjectNotationContainer;
 function stringifyCommon(data, indent, originalIndent, path, refMap) {
     let type = types_1.getType(data);
     if (!type || type === "function") {
@@ -40,72 +101,36 @@ function stringifyCommon(data, indent, originalIndent, path, refMap) {
 function getHandler(type, indent, originalIndent, path, refMap) {
     var handlers = {
         "Object": (data) => {
-            let container = [];
-            if (typeof data.toFRON == "function") {
-                data = data.toFRON();
-            }
+            data = getFavorData(data, "Object");
             if (data === undefined)
                 return;
+            let container = new ObjectNotationContainer("Object", indent, originalIndent);
             for (let x in data) {
-                let isVar = util_1.LatinVar.test(x), prop = isVar ? x : `['${x}']`, res = stringifyCommon(data[x], indent + originalIndent, originalIndent, path + (isVar && path ? "." : "") + prop, refMap);
-                if (res === undefined)
-                    continue;
-                else if (indent)
-                    container.push((isVar ? x : stringify(x)) + `: ${res}`);
-                else
-                    container.push((isVar ? x : stringify(x)) + `:${res}`);
+                let isVar = util_1.LatinVar.test(x), prop = isVar ? x : `['${x}']`, key = isVar ? x : stringify(x);
+                container.push(stringifyCommon(data[x], indent + originalIndent, originalIndent, path + (isVar && path ? "." : "") + prop, refMap), key);
             }
-            if (indent && container.length) {
-                return "{\n"
-                    + indent + container.join(",\n" + indent) + "\n"
-                    + indent.slice(0, -originalIndent.length) + "}";
-            }
-            else {
-                return "{" + container.join(",") + "}";
-            }
+            return container.toString();
         },
         "Array": (data) => {
-            let container = [];
-            for (let i = 0; i < data.length; i++) {
-                let res = stringifyCommon(data[i], indent + originalIndent, originalIndent, `${path}[${i}]`, refMap);
-                (res !== undefined) && container.push(res);
+            let container = new ObjectNotationContainer("Array", indent, originalIndent);
+            for (let i = 0, len = data.length; i < len; ++i) {
+                container.push(stringifyCommon(data[i], indent + originalIndent, originalIndent, `${path}[${i}]`, refMap));
             }
-            if (indent && container.length) {
-                return "[\n"
-                    + indent + container.join(",\n" + indent) + "\n"
-                    + indent.slice(0, -originalIndent.length) + "]";
-            }
-            else {
-                return "[" + container.join(",") + "]";
-            }
-        },
+            return container.toString();
+        }
     };
-    if (handlers[type]) {
-        return handlers[type];
-    }
-    else {
-        return (data) => {
-            let handler;
-            if (typeof data.toFRON == "function") {
-                data = data.toFRON();
-            }
-            else if (handler = get(types_1.CompoundTypes[type], "prototype.toFRON")) {
-                data = handler.apply(data);
-            }
-            else {
-                data = Object.assign({}, data);
-            }
-            if (data === undefined) {
-                return;
-            }
-            else if (data instanceof types_1.FRONString) {
-                return data.valueOf();
-            }
-            else {
-                return type + "(" + stringifyCommon(data, indent, originalIndent, path, refMap) + ")";
-            }
-        };
-    }
+    return handlers[type] || ((data) => {
+        data = getFavorData(data, type);
+        if (data === undefined) {
+            return;
+        }
+        else if (data instanceof types_1.FRONString) {
+            return data.valueOf();
+        }
+        else {
+            return type + "(" + stringifyCommon(data, indent, originalIndent, path, refMap) + ")";
+        }
+    });
 }
 function stringify(data, pretty) {
     let indent = "";

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const tslib_1 = require("tslib");
 const stringify_1 = require("./stringify");
 exports.stringify = stringify_1.stringify;
 const parse_1 = require("./parse");
@@ -18,4 +19,6 @@ function registerNS(nsp) {
     return (ctor) => types_1.register(`${nsp}.${ctor.name}`, ctor);
 }
 exports.registerNS = registerNS;
+tslib_1.__exportStar(require("./async/parse"), exports);
+tslib_1.__exportStar(require("./async/stringify"), exports);
 //# sourceMappingURL=index.js.map

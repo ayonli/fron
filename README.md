@@ -131,6 +131,7 @@ Uint32Array([1, 2, 3, 4])
 
 ```typescript
 function stringify(data: any, pretty?: boolean | string): string
+function stringifyAsync(data: any, pretty?: boolean | string): Promise<string>
 ```
 
 Serializes the given `data` to a FRON string. The optional `pretty` argument is 
@@ -144,6 +145,7 @@ with additional spaces.
 
 ```typescript
 function parse(data: string, filename?: string): any
+function parseAsync(data: string, filename?: string): Promise<any>
 ```
 
 Parses the given FRON string to JavaScript object. By default, if meets 
@@ -272,9 +274,10 @@ Since Buffer is a constructor, the parser can use it to create expected instance
 
 For more programmatic APIs, please check [API Reference](./api.md).
 
-## TIP
+## NOTE
 
 Although FRON is way more feature-rich than JSON, however, this implementation 
 is written in TypeScript/JavaScript, which is much more slower than the native 
-JSON support in parsing phase, when using it, you have to be very careful for 
-the scenarios you meet.
+JSON support, when using it, you have to be very careful for the scenarios you 
+meet. In order not to potentially block the event loop, it is recommended to use 
+`Async` version functions instead.

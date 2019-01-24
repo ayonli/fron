@@ -292,7 +292,7 @@ function composeToken(token) {
     return data;
 }
 exports.composeToken = composeToken;
-function parseToken(str, filename, listener) {
+function prepareParser(str, filename) {
     let type = typeof str;
     if (type !== "string") {
         throw new TypeError(`A string value was expected, ${type} given`);
@@ -305,15 +305,19 @@ function parseToken(str, filename, listener) {
         column: 1,
         filename: filename ? util_1.normalize(filename) : "<anonymous>"
     };
-    let rootToken = new SourceToken({
-        filename: cursor.filename,
-        position: {
-            start: pick(cursor, ["line", "column"]),
-            end: undefined
-        },
-        type: "root",
-        data: undefined,
-    });
+    return [new SourceToken({
+            filename: cursor.filename,
+            position: {
+                start: pick(cursor, ["line", "column"]),
+                end: undefined
+            },
+            type: "root",
+            data: undefined,
+        }), cursor];
+}
+exports.prepareParser = prepareParser;
+function parseToken(str, filename, listener) {
+    let [rootToken, cursor] = prepareParser(str, filename);
     rootToken.data = doParseToken(str, rootToken, cursor, listener);
     if (cursor.index < str.length) {
         doParseToken(str, rootToken, cursor, listener);

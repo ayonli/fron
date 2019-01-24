@@ -13,7 +13,6 @@
         "removeComments": true,
         "sourceMap": true,
         "noImplicitThis": true,
-        "importHelpers": true,
         "lib": [
             "es2015",
             "dom"
