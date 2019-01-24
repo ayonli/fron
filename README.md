@@ -85,7 +85,7 @@ lines
 
 /************************ Compound Types *************************/
 
-// Techniquely, Object and Array are compound types.
+// Technically, Object and Array are compound types.
 // Object
 { hello: "world", "key with quotes": 12345 }
 
