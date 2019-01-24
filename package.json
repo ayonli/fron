@@ -47,7 +47,8 @@
   },
   "dependencies": {
     "literal-toolkit": "^1.2.6",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "tslib": "^1.9.3"
   },
   "engines": {
     "node": ">=6.0"
