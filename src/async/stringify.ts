@@ -13,7 +13,7 @@ async function stringifyCommon(
     path: string,
     refMap: Map<any, string>
 ): Promise<string> {
-    if (typeof data === "object") {
+    if (data !== null && typeof data === "object") {
         if (refMap.has(data)) {
             return "Reference(" + stringify(refMap.get(data)) + ")";
         } else {

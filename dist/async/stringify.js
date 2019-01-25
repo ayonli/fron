@@ -6,7 +6,7 @@ const types_1 = require("../types");
 const util_1 = require("../util");
 function stringifyCommon(data, indent, originalIndent, path, refMap) {
     return tslib_1.__awaiter(this, void 0, void 0, function* () {
-        if (typeof data === "object") {
+        if (data !== null && typeof data === "object") {
             if (refMap.has(data)) {
                 return "Reference(" + stringify_1.stringify(refMap.get(data)) + ")";
             }
