@@ -7,7 +7,7 @@ const last = require("lodash/last");
 const util_1 = require("./util");
 const types_1 = require("./types");
 const literal_toolkit_1 = require("literal-toolkit");
-exports.PropOrType = /^([a-z_][a-z0-9_]*)\s*:|^([a-z_][a-z0-9_\.]*)\s*\(/i;
+exports.PropOrType = /^([a-z_\$][a-z0-9_\$]*)\s*:|^([a-z_\$][a-z0-9_\$\.]*)\s*\(/i;
 class SourceToken {
     constructor(token) {
         Object.assign(this, token);

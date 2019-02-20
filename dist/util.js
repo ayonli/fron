@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const get = require("lodash/get");
 exports.IsNode = typeof global === "object"
     && get(global, "process.release.name") === "node";
-exports.LatinVar = /^[a-z_][a-z0-9_]*$/i;
+exports.LatinVar = /^[a-z_\$][a-z0-9_\$]*$/i;
 function values(data) {
     let arr = [];
     if (typeof data[Symbol.iterator] === "function") {

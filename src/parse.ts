@@ -14,7 +14,7 @@ import {
 } from 'literal-toolkit';
 
 /** A pattern to match Latin properties or type notations. */
-export const PropOrType = /^([a-z_][a-z0-9_]*)\s*:|^([a-z_][a-z0-9_\.]*)\s*\(/i;
+export const PropOrType = /^([a-z_\$][a-z0-9_\$]*)\s*:|^([a-z_\$][a-z0-9_\$\.]*)\s*\(/i;
 
 /**
  * The interface that carries token details in the FRON string (source), e.g.

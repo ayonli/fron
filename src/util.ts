@@ -5,7 +5,7 @@ export const IsNode = typeof global === "object"
     && get(global, "process.release.name") === "node";
 
 /** The pattern that matches valid JavaScript Latin variable names. */
-export const LatinVar = /^[a-z_][a-z0-9_]*$/i;
+export const LatinVar = /^[a-z_\$][a-z0-9_\$]*$/i;
 
 /** Gets the values in the given iterable object. */
 export function values<T>(data: Iterable<T> | { [x: string]: T }) {

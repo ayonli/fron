@@ -1,6 +1,8 @@
 {
     "12": 12,
     "hello world!": "Hello,\tWorld!",
+    $foo: "Hello",
+    _bar: "World",
     hi: [
         "Hello, World!",
         "Hi, FRON"
