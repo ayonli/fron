@@ -91,14 +91,15 @@ function stringifyCommon(
     indent: string,
     originalIndent: string,
     path: string,
-    refMap: Map<any, string>
+    refMap: Map<any, string>,
+    tranferUndefined = false
 ): string {
     let type = getType(data);
 
-    if (!type || type === "function") {
+    if (type === "null" || (data === undefined && tranferUndefined)) {
+        return "null";
+    } else if (!type || type === "function") {
         return;
-    } else if (type === "null") {
-        return type;
     } else if (type === "bigint") {
         return number.toLiteral(data);
     } else if (type === "string") {
@@ -177,7 +178,8 @@ function getHandler(
                     indent + originalIndent,
                     originalIndent,
                     `${path}[${i}]`,
-                    refMap
+                    refMap,
+                    true
                 ));
             }
 
@@ -210,6 +212,8 @@ function getHandler(
  *  any strings for indentation is allowed.
  */
 export function stringify(data: any, pretty?: boolean | string): string {
+    if (data === undefined) return;
+
     let indent = "";
 
     if (pretty) {

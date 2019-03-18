@@ -65,13 +65,13 @@ class ObjectNotationContainer {
     }
 }
 exports.ObjectNotationContainer = ObjectNotationContainer;
-function stringifyCommon(data, indent, originalIndent, path, refMap) {
+function stringifyCommon(data, indent, originalIndent, path, refMap, tranferUndefined = false) {
     let type = types_1.getType(data);
-    if (!type || type === "function") {
-        return;
+    if (type === "null" || (data === undefined && tranferUndefined)) {
+        return "null";
     }
-    else if (type === "null") {
-        return type;
+    else if (!type || type === "function") {
+        return;
     }
     else if (type === "bigint") {
         return literal_toolkit_1.number.toLiteral(data);
@@ -114,7 +114,7 @@ function getHandler(type, indent, originalIndent, path, refMap) {
         "Array": (data) => {
             let container = new ObjectNotationContainer("Array", indent, originalIndent);
             for (let i = 0, len = data.length; i < len; ++i) {
-                container.push(stringifyCommon(data[i], indent + originalIndent, originalIndent, `${path}[${i}]`, refMap));
+                container.push(stringifyCommon(data[i], indent + originalIndent, originalIndent, `${path}[${i}]`, refMap, true));
             }
             return container.toString();
         }
@@ -133,6 +133,8 @@ function getHandler(type, indent, originalIndent, path, refMap) {
     });
 }
 function stringify(data, pretty) {
+    if (data === undefined)
+        return;
     let indent = "";
     if (pretty) {
         indent = typeof pretty == "string" ? pretty : "  ";

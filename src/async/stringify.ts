@@ -11,9 +11,12 @@ async function stringifyCommon(
     indent: string,
     originalIndent: string,
     path: string,
-    refMap: Map<any, string>
+    refMap: Map<any, string>,
+    tranferUndefined = false
 ): Promise<string> {
-    if (data !== null && typeof data === "object") {
+    if (data === undefined && tranferUndefined) {
+        return "null";
+    } else if (data !== null && typeof data === "object") {
         if (refMap.has(data)) {
             return "Reference(" + stringify(refMap.get(data)) + ")";
         } else {
@@ -75,7 +78,8 @@ function getHandler(
                     indent + originalIndent,
                     originalIndent,
                     `${path}[${i}]`,
-                    refMap
+                    refMap,
+                    true
                 ));
             }
 

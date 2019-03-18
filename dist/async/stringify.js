@@ -4,9 +4,12 @@ const tslib_1 = require("tslib");
 const stringify_1 = require("../stringify");
 const types_1 = require("../types");
 const util_1 = require("../util");
-function stringifyCommon(data, indent, originalIndent, path, refMap) {
+function stringifyCommon(data, indent, originalIndent, path, refMap, tranferUndefined = false) {
     return tslib_1.__awaiter(this, void 0, void 0, function* () {
-        if (data !== null && typeof data === "object") {
+        if (data === undefined && tranferUndefined) {
+            return "null";
+        }
+        else if (data !== null && typeof data === "object") {
             if (refMap.has(data)) {
                 return "Reference(" + stringify_1.stringify(refMap.get(data)) + ")";
             }
@@ -36,7 +39,7 @@ function getHandler(type, indent, originalIndent, path, refMap) {
         "Array": (data) => tslib_1.__awaiter(this, void 0, void 0, function* () {
             let container = new stringify_1.ObjectNotationContainer("Array", indent, originalIndent);
             for (let i = 0, len = data.length; i < len; ++i) {
-                container.push(yield stringifyCommon(data[i], indent + originalIndent, originalIndent, `${path}[${i}]`, refMap));
+                container.push(yield stringifyCommon(data[i], indent + originalIndent, originalIndent, `${path}[${i}]`, refMap, true));
             }
             return container.toString();
         })
