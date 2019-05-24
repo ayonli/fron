@@ -1,7 +1,7 @@
 import get = require("lodash/get");
 import pick = require("lodash/pick");
 import last = require("lodash/last");
-import { LatinVar } from "../util";
+import { LatinVar, matchRefNotation } from "../util";
 import {
     SourceToken,
     CursorToken,
@@ -231,6 +231,12 @@ async function doParseToken(
                 } else if ((dataToken = keyword.parseToken(remains))) { // keyword
                     token.type = "keyword";
                     token.data = dataToken.value;
+                    cursor.index += dataToken.length;
+                    cursor.column += dataToken.length;
+                } else if (["Array", "property"].indexOf(parent.type) >= 0
+                    && (dataToken = matchRefNotation(remains))) { // reference
+                    token.type = "Reference";
+                    token.data = dataToken.value.slice(2) || "";
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
                 } else if (matches = remains.match(PropOrType)) {

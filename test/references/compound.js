@@ -6,9 +6,9 @@
       [
         "Hello, World!"
       ],
-      $.abc.prop2[1]
+      Reference("abc.prop2[1]")
     ]
   },
-  def: $.abc,
-  ghi: $.abc.prop2
+  def: Reference("abc")
+  ghi: Reference("abc.prop2")
 }

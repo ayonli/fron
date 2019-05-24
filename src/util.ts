@@ -6,6 +6,7 @@ export const IsNode = typeof global === "object"
 
 /** The pattern that matches valid JavaScript Latin variable names. */
 export const LatinVar = /^[a-z_\$][a-z0-9_\$]*$/i;
+export const LatinVar2 = /^[a-z_\$][a-z0-9_\$]*/i;
 
 /** Gets the values in the given iterable object. */
 export function values<T>(data: Iterable<T> | { [x: string]: T }) {
@@ -43,4 +44,52 @@ export function normalize(path: string): string {
     }
 
     return parts.join(sep);
+}
+
+/**
+ * Matches the reference notation in the form of `$.a.b.c` where `$` stands for
+ * the current object.
+ */
+export function matchRefNotation(str: string) {
+    if (str[0] !== "$") {
+        return null;
+    }
+
+    let value = "$" + resolvePropPath(str.slice(1));
+
+    return {
+        value,
+        offset: 0,
+        length: value.length,
+        source: str,
+    };
+}
+
+function resolvePropPath(str: string) {
+    let prop = str[0];
+
+    if (prop === "[") {
+        let end = str.indexOf("]");
+
+        if (end === -1) {
+            return "";
+        } else {
+            prop += str.slice(1, end + 1);
+            str = str.slice(end + 1);
+        }
+    } else if (prop === ".") {
+        str = str.slice(1);
+        let matches = str.match(LatinVar2);
+
+        if (!matches) {
+            return "";
+        } else {
+            prop += matches[0];
+            str = str.slice(matches[0].length);
+        }
+    } else {
+        return "";
+    }
+
+    return prop + resolvePropPath(str);
 }

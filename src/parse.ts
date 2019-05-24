@@ -2,7 +2,7 @@ import get = require("lodash/get");
 import set = require("lodash/set");
 import pick = require("lodash/pick");
 import last = require("lodash/last");
-import { normalize, LatinVar } from "./util";
+import { normalize, LatinVar, matchRefNotation } from "./util";
 import { CompoundTypes, getInstance } from "./types";
 import {
     LiteralToken,
@@ -318,6 +318,12 @@ function doParseToken(
                     token.data = dataToken.value;
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
+                } else if (["Array", "property"].indexOf(parent.type) >= 0
+                    && (dataToken = matchRefNotation(remains))) { // reference
+                    token.type = "Reference";
+                    token.data = dataToken.value.slice(2) || "";
+                    cursor.index += dataToken.length;
+                    cursor.column += dataToken.length;
                 } else if (matches = remains.match(PropOrType)) {
                     let lines = matches[0].split("\n"),
                         key = matches[1] || matches[2];
@@ -462,9 +468,20 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
             // The data contained by Reference is a SourceToken with string,
             // which should be composed first before using it.
             if (token.parent.type === "Array") {
-                refMap[token.path] = compose(token.data, refMap);
+                if (typeof token.data === "string") {
+                    // When using reference notation in form of `$.a.b.c`, the 
+                    // token data here will be a 'string' representing the
+                    // property path.
+                    refMap[token.path] = token.data;
+                } else {
+                    refMap[token.path] = compose(token.data, refMap);
+                }
             } else { // property
-                refMap[token.parent.path] = compose(token.data, refMap);
+                if (typeof token.data === "string") {
+                    refMap[token.parent.path] = token.data;
+                } else {
+                    refMap[token.parent.path] = compose(token.data, refMap);
+                }
             }
             break;
 

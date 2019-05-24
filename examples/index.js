@@ -62,10 +62,10 @@ Symbol("description")
 RegExp({ source: "[a-zA-Z0-9]", flags: "i" })
 
 // Reference
-Reference("") // circular reference to the root object.
-Reference("abc")
-Reference("abc.def")
-Reference("abc['d e f']")
+$ // circular reference to the root object
+$.abc
+$.abc.def
+$.abc['d e f']
 
 // TypedArray
 Int8Array([1, 2, 3, 4])

@@ -53,17 +53,17 @@
     obj: {
         hello: "world!",
         ha: {
-            ha: Reference("")
+            ha: $
         },
-        "ha ha": Reference("obj"),
+        "ha ha": $.obj,
         "ha ha ha": {
             depth: {
-                cir: Reference("obj['ha ha ha']")
+                cir: $.obj['ha ha ha']
             }
         }
     },
     arr: [],
-    obj2: Reference(""),
+    obj2: $,
     obj3: {
         name: "Ayonium"
     }

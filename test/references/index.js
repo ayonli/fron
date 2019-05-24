@@ -52,4 +52,8 @@ describe("Parse References", () => {
             assert.deepStrictEqual(parse(get("circular")), circularReference);
         }
     });
+
+    it("should parse an object with Reference compound type as expected", () => {
+        assert.deepStrictEqual(parse(get("compound")), regularReference);
+    });
 });

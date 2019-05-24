@@ -3,9 +3,9 @@
     prop1: "Hello, World",
     prop2: [
       "Hi, Ayon",
-      Reference("abc.prop2")
+      $.abc.prop2
     ],
-    prop3: Reference("abc")
+    prop3: $.abc
   },
-  def: Reference("")
+  def: $
 }

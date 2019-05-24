@@ -11,7 +11,8 @@ function stringifyCommon(data, indent, originalIndent, path, refMap, tranferUnde
         }
         else if (data !== null && typeof data === "object") {
             if (refMap.has(data)) {
-                return "Reference(" + stringify_1.stringify(refMap.get(data)) + ")";
+                let path = refMap.get(data);
+                return path ? `$.${path}` : "$";
             }
             else {
                 refMap.set(data, path);

@@ -31,7 +31,10 @@ There are also some special notations that used internally to support more
 complicated scenarios.
 
 - `Reference` References to one of the nodes of the object, regardless of 
-    circulation.
+    circulation. Since v0.1.5, FRON introduced a new syntax to represent a
+    reference, the `$` notation, old style `Reference(<path>)` are still
+    supported, however not recommended, and the stringifier will also output the
+    new syntax.
 
 While in NodeJS, these types are also pre-registered to support.
 
@@ -111,10 +114,10 @@ Symbol("description")
 RegExp({ source: "[a-zA-Z0-9]", flags: "i" })
 
 // Reference
-Reference("") // circular reference to the root object.
-Reference("abc")
-Reference("abc.def")
-Reference("abc['d e f']")
+$ // circular reference to the root object
+$.abc
+$.abc.def
+$.abc['d e f']
 
 // TypedArray
 Int8Array([1, 2, 3, 4])
@@ -281,3 +284,36 @@ is written in TypeScript/JavaScript, which is much more slower than the native
 JSON support, when using it, you have to be very careful for the scenarios you 
 meet. In order not to potentially block the event loop, it is recommended to use 
 `Async` version functions instead.
+
+### More About Property Names
+
+Unlike JSON or BSON, FRON try to minimize the size of the data during 
+stringifying, so by default, it doesn't need quotes around an object's
+properties, but this rule only applies to those properties written in Latin 
+characters (which match regexp `/^[a-z_\$][a-z0-9_\$]*/i`), other properties
+still needs quotes (any type of quote will do).
+
+```typescript
+{
+    foo: "This prop name has no quote",
+    "中文属性": "This prop name needs quotes",
+    "has spaces": "This prop name needs quotes",
+    "123": "Prop name starts with a number needs quotes"
+}
+```
+
+### More About References
+
+Since v0.1.5, FRON introduced a new syntax to express references, using the `$`
+notation will make the data content more elegant and take smaller size. However,
+this syntax has some limitations, when using it, make sure 1) the dot (`.`)
+syntax should only take Latin characters (which is similar to property names),
+2) the notation is in a single line. Otherwise, you should use the old style
+instead.
+
+```typescript
+$ // equivalent to Reference("")
+$.abc // equivalent to Reference("abc")
+$.abc.def // equivalent to Reference("abc.def")
+$.abc['d e f'] // equivalent to Reference("abc['d e f']")
+```

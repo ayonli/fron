@@ -18,7 +18,11 @@ async function stringifyCommon(
         return "null";
     } else if (data !== null && typeof data === "object") {
         if (refMap.has(data)) {
-            return "Reference(" + stringify(refMap.get(data)) + ")";
+            // return "Reference(" + stringify(refMap.get(data)) + ")";
+
+            // since v0.1.5
+            let path = refMap.get(data);
+            return path ? `$.${path}` : "$";
         } else {
             refMap.set(data, path);
             return getHandler(getType(data), indent, originalIndent, path, refMap)(data);

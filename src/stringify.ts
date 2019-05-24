@@ -115,8 +115,12 @@ function stringifyCommon(
             // reference to this property will only be notate as an `Reference` 
             // with the original path, and the parser can use that path to set
             // property when parsing.
-            return "Reference(" + stringify(refMap.get(data)) + ")";
-        } else {
+
+            // return "Reference(" + stringify(refMap.get(data)) + ")";
+
+            // since v0.1.5
+            let path = refMap.get(data);
+            return path ? `$.${path}` : "$";        } else {
             refMap.set(data, path);
             return getHandler(type, indent, originalIndent, path, refMap)(data);
         }

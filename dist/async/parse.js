@@ -154,6 +154,13 @@ function doParseToken(str, parent, cursor, listener) {
                         cursor.index += dataToken.length;
                         cursor.column += dataToken.length;
                     }
+                    else if (["Array", "property"].indexOf(parent.type) >= 0
+                        && (dataToken = util_1.matchRefNotation(remains))) {
+                        token.type = "Reference";
+                        token.data = dataToken.value.slice(2) || "";
+                        cursor.index += dataToken.length;
+                        cursor.column += dataToken.length;
+                    }
                     else if (matches = remains.match(parse_1.PropOrType)) {
                         let lines = matches[0].split("\n"), key = matches[1] || matches[2];
                         cursor.index += key.length;
