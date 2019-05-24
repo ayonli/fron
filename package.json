@@ -1,6 +1,6 @@
 {
   "name": "fron",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Feature Rich Object Notation.",
   "main": "dist/index.js",
   "types": "src/index.ts",
@@ -36,17 +36,17 @@
   },
   "homepage": "https://github.com/hyurl/fron#readme",
   "devDependencies": {
-    "@types/lodash": "^4.14.120",
-    "@types/node": "^10.12.18",
+    "@types/lodash": "^4.14.132",
+    "@types/node": "^10.14.7",
     "mocha": "^5.2.0",
-    "source-map-support": "^0.5.10",
-    "ts-loader": "^5.3.3",
-    "typescript": "^3.2.4",
-    "webpack": "^4.28.4",
-    "webpack-cli": "^3.2.1"
+    "source-map-support": "^0.5.12",
+    "ts-loader": "^5.4.5",
+    "typescript": "^3.4.5",
+    "webpack": "^4.32.2",
+    "webpack-cli": "^3.3.2"
   },
   "dependencies": {
-    "literal-toolkit": "^1.2.6",
+    "literal-toolkit": "^1.2.8",
     "lodash": "^4.17.11",
     "tslib": "^1.9.3"
   },

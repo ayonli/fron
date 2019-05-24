@@ -120,7 +120,8 @@ function stringifyCommon(
 
             // since v0.1.5
             let path = refMap.get(data);
-            return path ? `$.${path}` : "$";        } else {
+            return path ? `$.${path}` : "$";
+        } else {
             refMap.set(data, path);
             return getHandler(type, indent, originalIndent, path, refMap)(data);
         }
