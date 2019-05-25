@@ -230,14 +230,21 @@ function doParseToken(str, parent, cursor, listener) {
         if (token.type !== "string" && token.type !== "Symbol" && (token.type !== "number" || typeof token.data === "bigint")) {
             throwSyntaxError(token, char);
         }
-        let prop = token.data, isVar = util_1.LatinVar.test(prop), prefix = get(parent, "parent.path", ""), path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
-        token.path = (prefix || "") + path;
+        let prop = token.data, isVar = util_1.LatinVar.test(prop), prefix = get(parent, "parent.path");
+        if (prefix === undefined) {
+            prefix = get(parent, "parent.parent.path", "");
+        }
+        let path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
         token.type = "property";
+        token.path = (prefix || "") + path;
         token.data = doParseToken(str, token, cursor, listener);
         parent.data[prop] = token;
     }
     else if (parent.type === "Array") {
-        let prefix = get(parent, "parent.path", "");
+        let prefix = get(parent, "parent.path");
+        if (prefix === undefined) {
+            prefix = get(parent, "parent.parent.path", "");
+        }
         token.path = `${prefix}[${parent.data.length}]`;
         parent.data.push(token);
     }

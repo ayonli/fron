@@ -318,20 +318,35 @@ async function doParseToken(
 
         let prop = token.data,
             isVar = LatinVar.test(prop),
-            prefix = get(parent, "parent.path", ""),
-            path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
+            prefix = get(parent, "parent.path");
+
+        // If the grandparent is a type wrapper， e.g. `SomeType({ ... })`, then
+        // the path of the grandparent will be undefined, and we have to search
+        // for the path from the higher parent.
+        if (prefix === undefined) {
+            prefix = get(parent, "parent.parent.path", "");
+        }
+
+        let path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
 
         // If the parent node is an object, that means the current node is a 
         // property node, should set the path and parse the property value as a
         // child node.
-        token.path = (prefix || "") + path;
         token.type = "property";
+        token.path = (prefix || "") + path;
         token.data = await doParseToken(str, token, cursor, listener);
 
         // Append the current node to the parent node as a new property. 
         parent.data[prop] = token;
     } else if (parent.type === "Array") { // array
-        let prefix = get(parent, "parent.path", "");
+        let prefix = get(parent, "parent.path");
+
+        // If the grandparent is a type wrapper， e.g. `SomeType([ ... ])`, then
+        // the path of the grandparent will be undefined, and we have to search
+        // for the path from the higher parent.
+        if (prefix === undefined) {
+            prefix = get(parent, "parent.parent.path", "");
+        }
 
         // If the parent node is an array, append the current node to the parent
         // node as its element.

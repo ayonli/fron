@@ -1,6 +1,6 @@
 {
   "name": "fron",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Feature Rich Object Notation.",
   "main": "dist/index.js",
   "types": "src/index.ts",
@@ -46,7 +46,7 @@
     "webpack-cli": "^3.3.2"
   },
   "dependencies": {
-    "literal-toolkit": "^1.2.9",
+    "literal-toolkit": "^1.2.10",
     "lodash": "^4.17.11",
     "tslib": "^1.9.3"
   },

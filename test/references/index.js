@@ -1,6 +1,6 @@
 require("source-map-support/register");
 const assert = require("assert");
-const { stringify, parse } = require("../..");
+const { stringify, parse, parseToken } = require("../..");
 const { createGetter } = require("../utils");
 const get = createGetter(__dirname);
 
@@ -31,6 +31,12 @@ circularReference.def = circularReference;
 circularReference.abc.prop3 = circularReference.abc;
 circularReference.abc.prop2.push(circularReference.abc.prop2);
 
+var referenceWithWrapper = {
+    a: {},
+    b: 123
+};
+referenceWithWrapper.a.c = referenceWithWrapper.a;
+
 describe("Stringify References", () => {
     it("should stringify an object with regular references as expected", () => {
         assert.strictEqual(stringify(regularReference, true), get("regular"));
@@ -55,5 +61,16 @@ describe("Parse References", () => {
 
     it("should parse an object with Reference compound type as expected", () => {
         assert.deepStrictEqual(parse(get("compound")), regularReference);
+    });
+
+    it("should parse an object with reference and wrapper type as expected", () => {
+        assert.deepEqual(parse(get("with-wrapper")), referenceWithWrapper);
+    });
+
+    it("should parse an object with reference and wrapper type as expected", () => {
+        let token = parseToken("{a:123}");
+        let str = stringify(token);
+        let str2 = stringify(token).replace(/[a-zA-Z0-9]+\(/g, "").replace(/\}\)/g, "}");
+        assert.deepStrictEqual(parse(str), parse(str2));
     });
 });
