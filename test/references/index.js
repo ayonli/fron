@@ -64,13 +64,13 @@ describe("Parse References", () => {
     });
 
     it("should parse an object with reference and wrapper type as expected", () => {
-        assert.deepEqual(parse(get("with-wrapper")), referenceWithWrapper);
+        assert.strictEqual(stringify(parse(get("with-wrapper"))), stringify(referenceWithWrapper));
     });
 
-    it("should parse an object with reference and wrapper type as expected", () => {
+    it("should parse an complicated object with reference and wrapper type as expected", () => {
         let token = parseToken("{a:123}");
         let str = stringify(token);
         let str2 = stringify(token).replace(/[a-zA-Z0-9]+\(/g, "").replace(/\}\)/g, "}");
-        assert.deepStrictEqual(parse(str), parse(str2));
+        assert.strictEqual(stringify(parse(str)), stringify(parse(str2)));
     });
 });
