@@ -53,7 +53,7 @@ export interface SourceToken<T extends string = string> {
      */
     data: any;
     /** The token of the parent node. */
-    parent?: SourceToken;
+    parent?: Pick<SourceToken, "type" | "path" | "parent">;
     /**
      * The path of the current token, only for object properties and array 
      * elements.
@@ -65,16 +65,6 @@ export interface SourceToken<T extends string = string> {
      * to the parser and will be skipped when composing data.
      */
     comments?: SourceToken<"comment">[];
-}
-
-/**
- * SourceToken is a class constructor as well, it is used to distinguish 
- * the token object from all objects.
- */
-export class SourceToken<T extends string = string> implements SourceToken<T> {
-    constructor(token: SourceToken<T>) {
-        Object.assign(this, token);
-    }
 }
 
 /** Carries details of the current position of the parsing cursor. */
@@ -141,7 +131,7 @@ function doParseToken(
 
         // Use a SourceToken instance, so that it could be distinguished from
         // common objects.
-        token = new SourceToken({
+        token = {
             filename: cursor.filename,
             position: {
                 start: pick(cursor, ["line", "column"]),
@@ -149,8 +139,9 @@ function doParseToken(
             },
             type: undefined,
             data: undefined,
-            parent // only root token doesn't have parent token.
-        });
+            // only root token doesn't have parent token.
+            parent: pick(parent, ["type", "path", "parent"])
+        };
 
         switch (char) {
             case ",":
@@ -280,7 +271,7 @@ function doParseToken(
                 remains = str.slice(cursor.index);
 
                 if ((dataToken = regexp.parseToken(remains))) { // regexp
-                    token.data = dataToken.value;
+                    token.data = dataToken.source;
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
                 } else if ((dataToken = comment.parseToken(remains))) { // comment
@@ -409,7 +400,7 @@ function doParseToken(
         // the path of the grandparent will be undefined, and we have to search
         // for the path from the higher parent.
         if (prefix === undefined) {
-            prefix = get(parent, "parent.parent.path", "");
+            prefix = get(parent, "parent.parent.path", "$");
         }
 
         let path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
@@ -430,7 +421,7 @@ function doParseToken(
         // the path of the grandparent will be undefined, and we have to search
         // for the path from the higher parent.
         if (prefix === undefined) {
-            prefix = get(parent, "parent.parent.path", "");
+            prefix = get(parent, "parent.parent.path", "$");
         }
 
         // If the parent node is an array, append the current node to the parent
@@ -500,8 +491,13 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
             }
             break;
 
+        case "regexp":
+            data = eval(token.data);
+            break;
+
         default:
-            if (token.data instanceof SourceToken) {
+            if (token.data !== null && typeof token.data === "object") {
+                // Handle nested source token.
                 let handle = getHandler(token.type),
                     inst = getInstance(token.type);
 
@@ -529,7 +525,7 @@ export function composeToken(token: SourceToken): any {
     for (let path in refMap) {
         let target = refMap[path];
         let ref = target ? get(data, target) : data;
-        set(data, path, ref);
+        set(data, path.slice(2), ref);
     }
 
     return data;
@@ -553,7 +549,7 @@ export function prepareParser(str: string, filename: string): [
         filename: filename ? normalize(filename) : "<anonymous>"
     };
 
-    return [new SourceToken<"root">({
+    return [{
         filename: cursor.filename,
         position: {
             start: pick(cursor, ["line", "column"]),
@@ -561,7 +557,7 @@ export function prepareParser(str: string, filename: string): [
         },
         type: "root",
         data: undefined,
-    }), cursor];
+    }, cursor];
 }
 
 /**

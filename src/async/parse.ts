@@ -56,7 +56,7 @@ async function doParseToken(
 
         // Use a SourceToken instance, so that it could be distinguished from
         // common objects.
-        token = new SourceToken({
+        token = {
             filename: cursor.filename,
             position: {
                 start: pick(cursor, ["line", "column"]),
@@ -64,8 +64,9 @@ async function doParseToken(
             },
             type: undefined,
             data: undefined,
-            parent // only root token doesn't have parent token.
-        });
+            // only root token doesn't have parent token.
+            parent: pick(parent, ["type", "path", "parent"])
+        };
 
         switch (char) {
             case ",":
@@ -195,7 +196,7 @@ async function doParseToken(
                 remains = str.slice(cursor.index);
 
                 if ((dataToken = regexp.parseToken(remains))) { // regexp
-                    token.data = dataToken.value;
+                    token.data = dataToken.source;
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
                 } else if ((dataToken = comment.parseToken(remains))) { // comment
@@ -324,7 +325,7 @@ async function doParseToken(
         // the path of the grandparent will be undefined, and we have to search
         // for the path from the higher parent.
         if (prefix === undefined) {
-            prefix = get(parent, "parent.parent.path", "");
+            prefix = get(parent, "parent.parent.path", "$");
         }
 
         let path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
@@ -345,7 +346,7 @@ async function doParseToken(
         // the path of the grandparent will be undefined, and we have to search
         // for the path from the higher parent.
         if (prefix === undefined) {
-            prefix = get(parent, "parent.parent.path", "");
+            prefix = get(parent, "parent.parent.path", "$");
         }
 
         // If the parent node is an array, append the current node to the parent
