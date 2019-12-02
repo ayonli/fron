@@ -1,4 +1,4 @@
-{
+Object({
     "12": 12,
     "hello world!": "Hello,\tWorld!",
     $foo: "Hello",
@@ -67,4 +67,4 @@
     obj3: {
         name: "Ayonium"
     }
-}
+})

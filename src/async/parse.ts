@@ -72,7 +72,7 @@ async function doParseToken(
             case ",":
                 // A comma (`,`) appears right after a property value in an 
                 // object, or an element in an array.
-                if (parent.type === "Object" || parent.type === "Array") {
+                if (parent.type === "object" || parent.type === "array") {
                     cursor.index++;
                     cursor.column++;
                 } else {
@@ -100,7 +100,7 @@ async function doParseToken(
                 // is an pure object literal or array literal.
                 // The parent here is the very type name node of the compound 
                 // type notation.
-                if (["root", "Object", "Array"].indexOf(parent.type) === -1) {
+                if (["root", "object", "array"].indexOf(parent.type) === -1) {
                     cursor.index++;
                     cursor.column++
                 } else {
@@ -111,7 +111,7 @@ async function doParseToken(
             case ")":
                 // The closing bracket (`)`) indicates the end position of a 
                 // compound type container, see above.
-                if (["root", "Object", "Array"].indexOf(parent.type) === -1) {
+                if (["root", "object", "array"].indexOf(parent.type) === -1) {
                     cursor.index++;
                     cursor.column++
                 } else {
@@ -134,7 +134,7 @@ async function doParseToken(
 
                 cursor.index++;
                 cursor.column++;
-                token.type = isArray ? "Array" : "Object";
+                token.type = isArray ? "array" : "object";
                 token.data = isArray ? [] : {};
 
                 // Objects and arrays contains sub-nodes (inner tokens), so 
@@ -148,7 +148,7 @@ async function doParseToken(
 
             case "}": // closing sign of an object
             case "]": // closing sign of an array
-                if (parent.type === "Object" || parent.type === "Array") {
+                if (parent.type === "object" || parent.type === "array") {
                     cursor.index++;
                     cursor.column++;
                 } else {
@@ -234,7 +234,7 @@ async function doParseToken(
                     token.data = dataToken.value;
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
-                } else if (["Array", "property"].indexOf(parent.type) >= 0
+                } else if (["array", "property"].indexOf(parent.type) >= 0
                     && (dataToken = matchRefNotation(remains))) { // reference
                     token.type = "Reference";
                     token.data = dataToken.value.slice(2) || "";
@@ -260,7 +260,7 @@ async function doParseToken(
                         token.type = "string";
 
                         // A property can only appears inside an object.
-                        if (parent.type === "Object") {
+                        if (parent.type === "object") {
                             token.data = key;
                         } else {
                             throwSyntaxError(token, char);
@@ -310,7 +310,7 @@ async function doParseToken(
         // Recursively calling doParserToken to get nearest non-comment token 
         // and travel through any potential comments.
         return doParseToken(str, parent, cursor, listener);
-    } else if (parent.type === "Object") { // object
+    } else if (parent.type === "object") { // object
         if (token.type !== "string" && token.type !== "Symbol" && (
             token.type !== "number" || typeof token.data === "bigint"
         )) {
@@ -339,7 +339,7 @@ async function doParseToken(
 
         // Append the current node to the parent node as a new property. 
         parent.data[prop] = token;
-    } else if (parent.type === "Array") { // array
+    } else if (parent.type === "array") { // array
         let prefix = get(parent, "parent.path");
 
         // If the grandparent is a type wrapper， e.g. `SomeType([ ... ])`, then
@@ -358,7 +358,7 @@ async function doParseToken(
     // If there is a listener bound, call it to watch all parsing moments.
     listener && listener.call(void 0, token);
 
-    if (parent.type === "Object" || parent.type === "Array") {
+    if (parent.type === "object" || parent.type === "array") {
         // If the parent node is either object or array, try to parse remaining 
         // tokens as its properties (or elements).
         return doParseToken(str, parent, cursor, listener);

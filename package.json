@@ -1,6 +1,6 @@
 {
   "name": "fron",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Feature Rich Object Notation.",
   "main": "dist/index.js",
   "types": "src/index.ts",
