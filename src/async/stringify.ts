@@ -25,6 +25,7 @@ async function stringifyCommon(
             return path ? `$.${path}` : "$";
         } else {
             refMap.set(data, path);
+            await new Promise(setImmediate);
             return getHandler(getType(data), indent, originalIndent, path, refMap)(data);
         }
     } else {

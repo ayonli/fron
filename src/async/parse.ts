@@ -27,6 +27,9 @@ async function doParseToken(
 ): Promise<SourceToken> {
     if (!str || cursor.index >= str.length) return;
 
+    // Make the function asynchronous.
+    await new Promise(setImmediate);
+
     let char: string;
     let token: SourceToken;
 
