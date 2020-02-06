@@ -25,6 +25,10 @@ export function getFavorData(data: any, type: string) {
         // method may not exist on the data instance, it may be 
         // registered with an object as prototype in the first place.
         data = handler.apply(data);
+    } else if (typeof data.toJSON === "function") { // compatible with JSON
+        // If the given object includes a `toJSON()` method, call it and
+        // get the returning value as the data to be stringified.
+        data = data.toJSON();
     } else if (data.constructor !== Object) {
         // If no handler is found, stringify the data as an ordinary 
         // object with only its enumerable properties.
@@ -92,11 +96,11 @@ function stringifyCommon(
     originalIndent: string,
     path: string,
     refMap: Map<any, string>,
-    tranferUndefined = false
+    transferUndefined = false
 ): string {
     let type = getType(data);
 
-    if (type === "null" || (data === undefined && tranferUndefined)) {
+    if (type === "null" || (data === undefined && transferUndefined)) {
         return "null";
     } else if (!type || type === "function") {
         return;
@@ -145,6 +149,15 @@ function getHandler(
             data = getFavorData(data, "Object");
 
             if (data === undefined) return;
+            if (data.constructor !== Object) {
+                return stringifyCommon(
+                    data,
+                    indent,
+                    originalIndent,
+                    path,
+                    refMap
+                );
+            }
 
             let container = new ObjectNotationContainer(
                 "Object",

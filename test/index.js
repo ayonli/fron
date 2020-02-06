@@ -33,6 +33,20 @@ describe("Stringify and parse void values", () => {
     });
 });
 
+describe("toJSON compatibility", () => {
+    it("should use toJSON() method if presented", () => {
+        assert.strictEqual(FRON.stringify({
+            toJSON() {
+                return "Hello, World!";
+            }
+        }), '"Hello, World!"');
+
+        // let arr = [];
+        // arr["toJSON"] = function () { return "Hello, World!" };
+        // assert.strictEqual(FRON.stringify(arr), '"Hello, World!"');
+    });
+});
+
 after("Speed Comparison", (done) => {
     __awaiter(void 0, null, void 0, function* () {
         var jsonStr = fs.readFileSync(__dirname + "/../package.json", "utf8");
