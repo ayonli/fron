@@ -99,7 +99,7 @@ lines
 Date("2018-12-10T03:21:29.015Z")
 
 // Error
-Error({ name: "Error", message: "something went wrong", stack: ... })
+Error({ name: "Error", message: "something went wrong", stack: "..." })
 
 // Map
 Map([["key1", "value1"], ["key2", "value2"]])
