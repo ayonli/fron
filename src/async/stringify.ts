@@ -12,21 +12,24 @@ async function stringifyCommon(
     originalIndent: string,
     path: string,
     refMap: Map<any, string>,
-    tranferUndefined = false
-): Promise<string> {
-    if (data === undefined && tranferUndefined) {
+    transferUndefined = false
+): Promise<string | undefined> {
+    if (data === undefined && transferUndefined) {
         return "null";
     } else if (data !== null && typeof data === "object") {
         if (refMap.has(data)) {
             // return "Reference(" + stringify(refMap.get(data)) + ")";
 
             // since v0.1.5
-            let path = refMap.get(data);
+            const path = refMap.get(data);
             return path ? `$.${path}` : "$";
         } else {
             refMap.set(data, path);
-            await new Promise(setImmediate);
-            return getHandler(getType(data), indent, originalIndent, path, refMap)(data);
+            await Promise.resolve(void 0);
+            const type = getType(data);
+            return type
+                ? getHandler(type, indent, originalIndent, path, refMap)(data)
+                : undefined;
         }
     } else {
         return stringify(data);
@@ -40,23 +43,23 @@ function getHandler(
     path: string,
     refMap: Map<any, string>
 ): (data: any) => Promise<string> {
-    var handlers = {
+    const handlers = {
         "Object": async (data: any) => {
             data = getFavorData(data, "Object");
 
             if (data === undefined) return;
 
-            let container = new ObjectNotationContainer(
+            const container = new ObjectNotationContainer(
                 "Object",
                 indent,
                 originalIndent
             );
 
             // Stringify all enumerable properties of the object.
-            for (let x in data) {
-                let isVar = LatinVar.test(x),
-                    prop = isVar ? x : `['${x}']`,
-                    key = isVar ? x : stringify(x);
+            for (const x in data) {
+                const isVar = LatinVar.test(x);
+                const prop = isVar ? x : `['${x}']`;
+                const key = isVar ? x : stringify(x);
 
                 container.push(await stringifyCommon(
                     data[x],
@@ -70,7 +73,7 @@ function getHandler(
             return container.toString();
         },
         "Array": async (data: any[]) => {
-            let container = new ObjectNotationContainer(
+            const container = new ObjectNotationContainer(
                 "Array",
                 indent,
                 originalIndent
@@ -92,7 +95,7 @@ function getHandler(
         }
     };
 
-    return handlers[type] || (async (data: any) => {
+    return (handlers as any)[type] || (async (data: any) => {
         data = getFavorData(data, type);
 
         if (data === undefined) {

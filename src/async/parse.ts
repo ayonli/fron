@@ -1,7 +1,5 @@
-import get = require("lodash/get");
 import pick = require("lodash/pick");
-import last = require("lodash/last");
-import { LatinVar, matchRefNotation } from "../util";
+import { last, LatinVar, matchRefNotation } from "../util";
 import {
     SourceToken,
     CursorToken,
@@ -24,14 +22,14 @@ async function doParseToken(
     parent: SourceToken,
     cursor: CursorToken,
     listener?: (token: SourceToken) => void
-): Promise<SourceToken> {
+): Promise<SourceToken | undefined> {
     if (!str || cursor.index >= str.length) return;
 
     // Make the function asynchronous.
-    await new Promise(setImmediate);
+    await Promise.resolve(void 0);
 
-    let char: string;
-    let token: SourceToken;
+    let char: string | undefined;
+    let token: SourceToken | undefined;
 
     loop:
     while ((char = str[cursor.index])) {
@@ -54,8 +52,8 @@ async function doParseToken(
             continue;
         }
 
-        let remains: string,
-            dataToken: LiteralToken & { value: any, type?: string };
+        let remains: string;
+        let dataToken: (LiteralToken & { value: any, type?: string; }) | null;
 
         // Use a SourceToken instance, so that it could be distinguished from
         // common objects.
@@ -65,7 +63,7 @@ async function doParseToken(
                 start: pick(cursor, ["line", "column"]),
                 end: undefined
             },
-            type: undefined,
+            type: undefined as any,
             data: undefined,
             // only root token doesn't have parent token.
             parent: pick(parent, ["type", "path", "parent"])
@@ -105,7 +103,7 @@ async function doParseToken(
                 // type notation.
                 if (["root", "object", "array"].indexOf(parent.type) === -1) {
                     cursor.index++;
-                    cursor.column++
+                    cursor.column++;
                 } else {
                     throwSyntaxError(token, char);
                 }
@@ -116,7 +114,7 @@ async function doParseToken(
                 // compound type container, see above.
                 if (["root", "object", "array"].indexOf(parent.type) === -1) {
                     cursor.index++;
-                    cursor.column++
+                    cursor.column++;
                 } else {
                     throwSyntaxError(token, char);
                 }
@@ -133,7 +131,7 @@ async function doParseToken(
                 // Like the very JavaScript style, an object literal uses a pair
                 // of curly braces to contain key-value pairs, and an array
                 // literal uses a pair of square brackets to contain elements.
-                let isArray = char === "[";
+                const isArray = char === "[";
 
                 cursor.index++;
                 cursor.column++;
@@ -176,7 +174,7 @@ async function doParseToken(
                 token.type = "string";
 
                 if ((dataToken = string.parseToken(str.slice(cursor.index)))) {
-                    let lines = dataToken.source.split("\n");
+                    const lines = dataToken.source.split("\n");
 
                     token.data = dataToken.value;
                     cursor.index += dataToken.length;
@@ -185,7 +183,7 @@ async function doParseToken(
                     if (lines.length > 1) {
                         // If the string takes multiple lines, move the column 
                         // number to the end of the last line.
-                        cursor.column = last(lines).length + 1;
+                        cursor.column = last(lines)!.length + 1;
                     } else {
                         cursor.column += dataToken.length;
                     }
@@ -209,11 +207,11 @@ async function doParseToken(
 
                     if (dataToken.type !== "//") {
                         // Multi-line comment starts with `/*` or `/**`.
-                        let lines = dataToken.source.split("\n");
+                        const lines = dataToken.source.split("\n");
                         cursor.line += lines.length - 1;
 
                         if (lines.length > 1) {
-                            cursor.column = last(lines).length + 1;
+                            cursor.column = last(lines)!.length + 1;
                         } else {
                             cursor.column += dataToken.length;
                         }
@@ -225,7 +223,7 @@ async function doParseToken(
 
             default:
                 remains = str.slice(cursor.index);
-                let matches: RegExpMatchArray;
+                let matches: RegExpMatchArray | null;
 
                 if ((dataToken = number.parseToken(remains))) { // number
                     token.type = "number";
@@ -320,18 +318,18 @@ async function doParseToken(
             throwSyntaxError(token, char);
         }
 
-        let prop = token.data,
-            isVar = LatinVar.test(prop),
-            prefix = get(parent, "parent.path");
+        const prop = token.data;
+        const isVar = LatinVar.test(prop);
+        let prefix = parent.parent?.path;
 
         // If the grandparent is a type wrapper， e.g. `SomeType({ ... })`, then
         // the path of the grandparent will be undefined, and we have to search
         // for the path from the higher parent.
         if (prefix === undefined) {
-            prefix = get(parent, "parent.parent.path", "$");
+            prefix = parent.parent?.parent?.path ?? "$";
         }
 
-        let path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
+        const path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
 
         // If the parent node is an object, that means the current node is a 
         // property node, should set the path and parse the property value as a
@@ -343,13 +341,13 @@ async function doParseToken(
         // Append the current node to the parent node as a new property. 
         parent.data[prop] = token;
     } else if (parent.type === "array") { // array
-        let prefix = get(parent, "parent.path");
+        let prefix = parent.parent?.path;
 
         // If the grandparent is a type wrapper， e.g. `SomeType([ ... ])`, then
         // the path of the grandparent will be undefined, and we have to search
         // for the path from the higher parent.
         if (prefix === undefined) {
-            prefix = get(parent, "parent.parent.path", "$");
+            prefix = parent.parent?.parent?.path ??  "$";
         }
 
         // If the parent node is an array, append the current node to the parent
@@ -382,9 +380,13 @@ export async function parseTokenAsync(
     str: string,
     filename?: string,
     listener?: (token: SourceToken) => void
-): Promise<SourceToken<"root">> {
-    let [rootToken, cursor] = prepareParser(str, filename);
+): Promise<SourceToken<"root"> | null> {
+    let result = prepareParser(str, filename);
 
+    if (!result)
+        return null;
+
+    const [rootToken, cursor] = result;
     rootToken.data = await doParseToken(str, rootToken, cursor, listener);
 
     if (cursor.index < str.length) {
@@ -402,5 +404,6 @@ export async function parseTokenAsync(
  *  position properly. The default value is `<anonymous>`.
  */
 export async function parseAsync(str: string, filename?: string): Promise<any> {
-    return composeToken(await parseTokenAsync(str, filename));
+    const token = await parseTokenAsync(str, filename);
+    return token ? composeToken(token) : null;
 }

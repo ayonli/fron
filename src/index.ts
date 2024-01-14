@@ -8,7 +8,7 @@ import {
 } from "./parse";
 import {
     register,
-    FRONEntry,
+    FRONInterface,
     FRONEntryBase,
     FRONConstructor,
     FRONString,
@@ -23,7 +23,7 @@ export {
     parseToken,
     composeToken,
     SourceToken,
-    FRONEntry,
+    FRONInterface as FRONEntry,
     FRONEntryBase,
     FRONConstructor,
     FRONString,

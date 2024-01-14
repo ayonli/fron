@@ -1,4 +1,3 @@
-import get = require("lodash/get");
 import pick = require("lodash/pick");
 import omit = require("lodash/omit");
 import { values, IsNode } from "./util";
@@ -6,18 +5,18 @@ import { values, IsNode } from "./util";
 /**
  * The interface restricts if a user defined type can be registered as FRON type.
  */
-export interface FRONEntry {
+export interface FRONInterface {
     toFRON?(): any;
     fromFRON(data: any): any;
 };
 
 /** Indicates a class constructor that implements the FRONEntry interface. */
-export type FRONConstructor = new (...args: any[]) => FRONEntry;
+export type FRONConstructor = new (...args: any[]) => FRONInterface;
 
 /** 
  * Stores all supported compound types, includes the types that user registered.
  */
-export const CompoundTypes: { [type: string]: FRONConstructor } = {
+export const CompoundTypes: { [type: string]: FRONConstructor; } = {
     // objects and arrays are handled internally by the stringifier and parser,
     // register here is for checkers to identify them as compound types.
     Object: <any>Object,
@@ -28,24 +27,26 @@ export const CompoundTypes: { [type: string]: FRONConstructor } = {
  * Gets the type name in string of the input data, may return a literal type 
  * or a compound type.
  */
-export function getType(data: any): string {
+export function getType(data: any): string | undefined {
     if (data === undefined) {
         return;
     } else if (data === null) {
         return "null";
     } else {
-        let type = typeof data,
-            ctor: FRONConstructor;
+        const type = typeof data;
+        const ctor = data?.constructor as FRONConstructor | undefined;
 
         if (type !== "object") {
             return type === "symbol" ? "Symbol" : type;
-        } else if (ctor = get(data, "constructor")) {
-            for (let type in CompoundTypes) {
+        } else if (ctor) {
+            for (const type in CompoundTypes) {
                 if (ctor === CompoundTypes[type])
                     return type;
             }
 
             return ctor.name;
+        } else {
+            return;
         }
     }
 }
@@ -70,7 +71,7 @@ export function getInstance<T = any>(
  * the parsing phase, a FRONEntryBase instance will be created via 
  * `Object.create()` and apply the `fromFRON()` method to it.
  */
-export class FRONEntryBase implements FRONEntry {
+export class FRONEntryBase implements FRONInterface {
     toFRON() {
         return Object.assign({}, this);
     }
@@ -90,7 +91,7 @@ export class FRONEntryBase implements FRONEntry {
 export class FRONString extends String { }
 
 /** Checks if the given prototype can be registered as an FRON type. */
-function checkProto(name: string, proto: FRONEntry) {
+function checkProto(name: string, proto: FRONInterface) {
     if (typeof proto.fromFRON !== "function") {
         // Every constructor that used as FRON type should include a 
         // `fromFRON()` method, so that when parsing the FRON string, the parser
@@ -151,7 +152,7 @@ function copyProto(source: object | FRONConstructor, target: Function) {
  */
 export function register(
     type: string | FRONConstructor | (new (...args: any[]) => any),
-    proto?: string | FRONConstructor | FRONEntry
+    proto?: string | FRONConstructor | FRONInterface
 ): void {
     if (typeof type === "function") {
         if (!proto) {
@@ -225,7 +226,7 @@ register(RegExp, {
     toFRON(this: RegExp) {
         return new FRONString(this.toString());
     },
-    fromFRON(data: { source: string, flags: string }) {
+    fromFRON(data: { source: string, flags: string; }) {
         // For FRON string to support object wrapped by RegExp, and literal is 
         // internally support by the parser.
         return new (<any>this.constructor)(data.source, data.flags);
@@ -261,7 +262,9 @@ register(Date, {
     Int32Array,
     Uint8Array,
     Uint16Array,
-    Uint32Array
+    Uint32Array,
+    Float32Array,
+    Float64Array
 ].forEach(type => {
     register(type, {
         toFRON(this: Iterable<number>) {
@@ -287,11 +290,10 @@ register(Date, {
             // When stringify an error, stringify all its member properties,
             // include `name`, `message` and `stack`, since they may not be 
             // enumerated, so using `pick()` to fetch them manually.
-            let reserved = ["name", "message", "stack"];
-
+            const reserved = ["name", "message", "stack", "cause"];
             return Object.assign({}, pick(this, reserved), omit(this, reserved));
         },
-        fromFRON(this: Error, data: { [x: string]: any }) {
+        fromFRON(this: Error, data: { [x: string]: any; }) {
             Object.defineProperties(this, {
                 name: {
                     value: data.name,
@@ -307,9 +309,14 @@ register(Date, {
                     value: data.stack,
                     writable: true,
                     configurable: true
-                }
+                },
+                cause: {
+                    value: data.cause,
+                    writable: false,
+                    configurable: true,
+                },
             });
-            Object.assign(this, omit(data, ["name", "message", "stack"]));
+            Object.assign(this, omit(data, ["name", "message", "stack", "cause"]));
 
             return this;
         }

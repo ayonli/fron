@@ -2,19 +2,21 @@
     "compilerOptions": {
         "module": "commonjs",
         "target": "es2015",
-        "preserveConstEnums": true,
         "rootDir": "src/",
         "outDir": "dist/",
         "declaration": true,
-        "experimentalDecorators": true,
         "newLine": "LF",
+        "strict": true,
+        "noImplicitThis": true,
         "noUnusedParameters": false,
         "noUnusedLocals": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
         "pretty": true,
         "removeComments": true,
         "sourceMap": true,
-        "noImplicitThis": true,
         "importHelpers": true,
+        "skipLibCheck": true,
         "lib": [
             "es2015",
             "dom"
@@ -22,6 +24,6 @@
     },
     "includes": [
         "src/*.ts",
-        "src/*/*.js"
+        "src/async/*.ts"
     ]
 }

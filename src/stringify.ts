@@ -1,11 +1,6 @@
-import get = require("lodash/get");
 import { string, number } from "literal-toolkit";
 import { LatinVar } from "./util";
-import {
-    CompoundTypes,
-    FRONString,
-    getType,
-} from './types';
+import { CompoundTypes, FRONString, getType } from './types';
 
 /**
  * Gets the favor data construction for stringifing, and calls the `toFRON()` 
@@ -18,7 +13,7 @@ export function getFavorData(data: any, type: string) {
         // If the given object includes a `toFRON()` method, call it and
         // get the returning value as the data to be stringified.
         data = data.toFRON();
-    } else if (handler = get(CompoundTypes[type], "prototype.toFRON")) {
+    } else if (handler = CompoundTypes[type]?.prototype?.toFRON) {
         // If there is a customized handler registered to deal with the 
         // type, apply it to the data. The reason to call `apply()` 
         // instead of calling the method directly is that the handler 
@@ -49,7 +44,7 @@ export class ObjectNotationContainer {
     ) { }
 
     /** Pushes data into the container. */
-    push(value: string, key?: string) {
+    push(value: string | undefined, key?: string) {
         if (value === undefined) return;
 
         if (this.type === "Object") {
@@ -64,8 +59,8 @@ export class ObjectNotationContainer {
 
     /** Gets the stringified result of the notation. */
     toString(): string {
-        let { type, container, indent, originalIndent } = this;
-        let str: string;
+        const { type, container, indent, originalIndent } = this;
+        let str = "";
 
         if (type === "Object") {
             if (indent && container.length) { // use indentation
@@ -97,8 +92,8 @@ function stringifyCommon(
     path: string,
     refMap: Map<any, string>,
     transferUndefined = false
-): string {
-    let type = getType(data);
+): string | undefined {
+    const type = getType(data);
 
     if (type === "null" || (data === undefined && transferUndefined)) {
         return "null";
@@ -123,7 +118,7 @@ function stringifyCommon(
             // return "Reference(" + stringify(refMap.get(data)) + ")";
 
             // since v0.1.5
-            let path = refMap.get(data);
+            const path = refMap.get(data);
             return path ? `$.${path}` : "$";
         } else {
             refMap.set(data, path);
@@ -144,7 +139,7 @@ function getHandler(
     path: string,
     refMap: Map<any, string>
 ): (data: any) => string {
-    var handlers = {
+    const handlers = {
         "Object": (data: any) => {
             data = getFavorData(data, "Object");
 
@@ -159,17 +154,17 @@ function getHandler(
                 );
             }
 
-            let container = new ObjectNotationContainer(
+            const container = new ObjectNotationContainer(
                 "Object",
                 indent,
                 originalIndent
             );
 
             // Stringify all enumerable properties of the object.
-            for (let x in data) {
-                let isVar = LatinVar.test(x),
-                    prop = isVar ? x : `['${x}']`,
-                    key = isVar ? x : stringify(x);
+            for (const x in data) {
+                const isVar = LatinVar.test(x);
+                const prop = isVar ? x : `['${x}']`;
+                const key = isVar ? x : stringify(x);
 
                 container.push(stringifyCommon(
                     data[x],
@@ -183,7 +178,7 @@ function getHandler(
             return container.toString();
         },
         "Array": (data: any[]) => {
-            let container = new ObjectNotationContainer(
+            const container = new ObjectNotationContainer(
                 "Array",
                 indent,
                 originalIndent
@@ -205,7 +200,7 @@ function getHandler(
         }
     };
 
-    return handlers[type] || ((data: any) => {
+    return (handlers as any)[type] || ((data: any) => {
         data = getFavorData(data, type);
 
         if (data === undefined) {
@@ -229,7 +224,7 @@ function getHandler(
  * @param pretty The default indentation is two spaces, other than that, set 
  *  any strings for indentation is allowed.
  */
-export function stringify(data: any, pretty?: boolean | string): string {
+export function stringify(data: any, pretty?: boolean | string): string | undefined {
     if (data === undefined) return;
 
     let indent = "";

@@ -1,24 +1,26 @@
-import get = require("lodash/get");
-
 /** Whether the current environment is NodeJS. */
-export const IsNode = typeof global === "object"
-    && get(global, "process.release.name") === "node";
+export const IsNode = typeof process === "object"
+    && process.release?.name === "node";
 
 /** The pattern that matches valid JavaScript Latin variable names. */
 export const LatinVar = /^[a-z_\$][a-z0-9_\$]*$/i;
 export const LatinVar2 = /^[a-z_\$][a-z0-9_\$]*/i;
 
-/** Gets the values in the given iterable object. */
-export function values<T>(data: Iterable<T> | { [x: string]: T }) {
-    let arr: T[] = [];
+export function last<T>(arr: T[]): T | undefined {
+    return arr.length ? arr[arr.length - 1] : undefined;
+}
 
-    if (typeof data[Symbol.iterator] === "function") {
-        for (let item of (<Iterable<T>>data)) {
+/** Gets the values in the given iterable object. */
+export function values<T>(data: Iterable<T> | object) {
+    const arr: T[] = [];
+
+    if (typeof (data as any)[Symbol.iterator] === "function") {
+        for (const item of (<Iterable<T>>data)) {
             arr.push(item);
         }
     } else {
-        for (let key in data) {
-            arr.push(data[key]);
+        for (const key of Reflect.ownKeys(data)) {
+            arr.push((data as any)[key]);
         }
     }
 
@@ -30,8 +32,8 @@ export function values<T>(data: Iterable<T> | { [x: string]: T }) {
  * separators to platform preference.
  */
 export function normalize(path: string): string {
-    let parts = path.split(/\/|\\/),
-        sep = IsNode ? "/" : (process.platform == "win32" ? "\\" : "/");
+    const parts = path.split(/\/|\\/);
+    const sep = IsNode ? (process.platform == "win32" ? "\\" : "/") : "/";
 
     for (let i = 0; i < parts.length; i++) {
         if (parts[i] == "..") {
@@ -55,7 +57,7 @@ export function matchRefNotation(str: string) {
         return null;
     }
 
-    let value = "$" + resolvePropPath(str.slice(1));
+    const value = "$" + resolvePropPath(str.slice(1));
 
     return {
         value,
@@ -65,11 +67,11 @@ export function matchRefNotation(str: string) {
     };
 }
 
-function resolvePropPath(str: string) {
+function resolvePropPath(str: string): string {
     let prop = str[0];
 
     if (prop === "[") {
-        let end = str.indexOf("]");
+        const end = str.indexOf("]");
 
         if (end === -1) {
             return "";
@@ -79,7 +81,7 @@ function resolvePropPath(str: string) {
         }
     } else if (prop === ".") {
         str = str.slice(1);
-        let matches = str.match(LatinVar2);
+        const matches = str.match(LatinVar2);
 
         if (!matches) {
             return "";

@@ -1,8 +1,7 @@
 import get = require("lodash/get");
 import set = require("lodash/set");
 import pick = require("lodash/pick");
-import last = require("lodash/last");
-import { normalize, LatinVar, matchRefNotation } from "./util";
+import { last, normalize, LatinVar, matchRefNotation } from "./util";
 import { CompoundTypes, getInstance } from "./types";
 import {
     LiteralToken,
@@ -33,12 +32,12 @@ export interface SourceToken<T extends string = string> {
     position: {
         start: {
             line: number,
-            column: number
+            column: number;
         };
         end: {
             line: number,
-            column: number
-        };
+            column: number;
+        } | undefined;
     };
     /**
      * The type of the current token, literal types are lower-cased and compound
@@ -89,8 +88,8 @@ export function throwSyntaxError(token: SourceToken, char?: string): never {
  * Gets the customized handler of the given type for parsing, may return 
  * undefined if no handler is registered.
  */
-export function getHandler(type: string): (data: any) => any {
-    return get(CompoundTypes[type], "prototype.fromFRON");
+function getHandler(type: string): ((data: any) => any) | null {
+    return CompoundTypes[type]?.prototype?.fromFRON ?? null;
 }
 
 /** Parses every token in the FRON string. */
@@ -98,12 +97,12 @@ function doParseToken(
     str: string,
     parent: SourceToken,
     cursor: CursorToken,
-    listener?: (token: SourceToken) => void
-): SourceToken {
+    listener: ((token: SourceToken) => void) | null = null
+): SourceToken | undefined {
     if (!str || cursor.index >= str.length) return;
 
-    let char: string;
-    let token: SourceToken;
+    let char: string | undefined;
+    let token: SourceToken | undefined;
 
     loop:
     while ((char = str[cursor.index])) {
@@ -126,8 +125,8 @@ function doParseToken(
             continue;
         }
 
-        let remains: string,
-            dataToken: LiteralToken & { value: any, type?: string };
+        let remains: string | undefined;
+        let dataToken: (LiteralToken & { value: any, type?: string; }) | null;
 
         // Use a SourceToken instance, so that it could be distinguished from
         // common objects.
@@ -137,7 +136,7 @@ function doParseToken(
                 start: pick(cursor, ["line", "column"]),
                 end: undefined
             },
-            type: undefined,
+            type: undefined as any,
             data: undefined,
             // only root token doesn't have parent token.
             parent: pick(parent, ["type", "path", "parent"])
@@ -177,7 +176,7 @@ function doParseToken(
                 // type notation.
                 if (["root"].indexOf(parent.type) === -1) {
                     cursor.index++;
-                    cursor.column++
+                    cursor.column++;
                 } else {
                     throwSyntaxError(token, char);
                 }
@@ -188,7 +187,7 @@ function doParseToken(
                 // compound type container, see above.
                 if (["root"].indexOf(parent.type) === -1) {
                     cursor.index++;
-                    cursor.column++
+                    cursor.column++;
                 } else {
                     throwSyntaxError(token, char);
                 }
@@ -205,7 +204,7 @@ function doParseToken(
                 // Like the very JavaScript style, an object literal uses a pair
                 // of curly braces to contain key-value pairs, and an array
                 // literal uses a pair of square brackets to contain elements.
-                let isArray = char === "[";
+                const isArray = char === "[";
 
                 cursor.index++;
                 cursor.column++;
@@ -248,7 +247,7 @@ function doParseToken(
                 token.type = "string";
 
                 if ((dataToken = string.parseToken(str.slice(cursor.index)))) {
-                    let lines = dataToken.source.split("\n");
+                    const lines = dataToken.source.split("\n");
 
                     token.data = dataToken.value;
                     cursor.index += dataToken.length;
@@ -257,7 +256,7 @@ function doParseToken(
                     if (lines.length > 1) {
                         // If the string takes multiple lines, move the column 
                         // number to the end of the last line.
-                        cursor.column = last(lines).length + 1;
+                        cursor.column = last(lines)!.length + 1;
                     } else {
                         cursor.column += dataToken.length;
                     }
@@ -281,11 +280,11 @@ function doParseToken(
 
                     if (dataToken.type !== "//") {
                         // Multi-line comment starts with `/*` or `/**`.
-                        let lines = dataToken.source.split("\n");
+                        const lines = dataToken.source.split("\n");
                         cursor.line += lines.length - 1;
 
                         if (lines.length > 1) {
-                            cursor.column = last(lines).length + 1;
+                            cursor.column = last(lines)!.length + 1;
                         } else {
                             cursor.column += dataToken.length;
                         }
@@ -297,7 +296,7 @@ function doParseToken(
 
             default:
                 remains = str.slice(cursor.index);
-                let matches: RegExpMatchArray;
+                let matches: RegExpMatchArray | null;
 
                 if ((dataToken = number.parseToken(remains))) { // number
                     token.type = "number";
@@ -316,8 +315,8 @@ function doParseToken(
                     cursor.index += dataToken.length;
                     cursor.column += dataToken.length;
                 } else if (matches = remains.match(PropOrType)) {
-                    let lines = matches[0].split("\n"),
-                        key = matches[1] || matches[2];
+                    const lines = matches[0].split("\n");
+                    const key = matches[1] || matches[2];
 
                     cursor.index += key.length;
                     cursor.line += lines.length - 1;
@@ -392,18 +391,18 @@ function doParseToken(
             throwSyntaxError(token, char);
         }
 
-        let prop = token.data,
-            isVar = LatinVar.test(prop),
-            prefix = get(parent, "parent.path");
+        const prop = token.data;
+        const isVar = LatinVar.test(prop);
+        let prefix = parent.parent?.path;
 
         // If the grandparent is a type wrapper， e.g. `SomeType({ ... })`, then
         // the path of the grandparent will be undefined, and we have to search
         // for the path from the higher parent.
         if (prefix === undefined) {
-            prefix = get(parent, "parent.parent.path", "$");
+            prefix = parent.parent?.parent?.path ?? "$";
         }
 
-        let path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
+        const path = isVar ? (prefix ? "." : "") + `${prop}` : `['${prop}']`;
 
         // If the parent node is an object, that means the current node is a 
         // property node, should set the path and parse the property value as a
@@ -415,13 +414,13 @@ function doParseToken(
         // Append the current node to the parent node as a new property. 
         parent.data[prop] = token;
     } else if (parent.type === "array") { // array
-        let prefix = get(parent, "parent.path");
+        let prefix = parent.parent?.path;
 
         // If the grandparent is a type wrapper， e.g. `SomeType([ ... ])`, then
         // the path of the grandparent will be undefined, and we have to search
         // for the path from the higher parent.
         if (prefix === undefined) {
-            prefix = get(parent, "parent.parent.path", "$");
+            prefix = parent.parent?.parent?.path ?? "$";
         }
 
         // If the parent node is an array, append the current node to the parent
@@ -446,7 +445,7 @@ function doParseToken(
  * Composes all tokens (include children nodes) to a JavaScript object and 
  * gather all references into a map.
  */
-function compose(token: SourceToken, refMap: { [path: string]: string }): any {
+function compose(token: SourceToken, refMap: { [path: string]: string; }): any {
     let data: any;
 
     if (!token) return;
@@ -454,7 +453,7 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
     switch (token.type) {
         case "object":
             data = {};
-            for (let prop in token.data) {
+            for (const prop in token.data) {
                 // Every property in an object token is also SourceToken, which
                 // should be composed recursively.
                 data[prop] = compose(token.data[prop].data, refMap);
@@ -463,7 +462,7 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
 
         case "array":
             data = [];
-            for (let item of token.data) {
+            for (const item of token.data) {
                 // Every element in an array token is also SourceToken, which
                 // should be composed recursively.
                 data.push(compose(item, refMap));
@@ -473,20 +472,20 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
         case "Reference":
             // The data contained by Reference is a SourceToken with string,
             // which should be composed first before using it.
-            if (token.parent.type === "array") {
+            if (token.parent!.type === "array") {
                 if (typeof token.data === "string") {
                     // When using reference notation in form of `$.a.b.c`, the 
                     // token data here will be a 'string' representing the
                     // property path.
-                    refMap[token.path] = token.data;
+                    refMap[token.path!] = token.data;
                 } else {
-                    refMap[token.path] = compose(token.data, refMap);
+                    refMap[token.path!] = compose(token.data, refMap);
                 }
             } else { // property
                 if (typeof token.data === "string") {
-                    refMap[token.parent.path] = token.data;
+                    refMap[token.parent!.path!] = token.data;
                 } else {
-                    refMap[token.parent.path] = compose(token.data, refMap);
+                    refMap[token.parent!.path!] = compose(token.data, refMap);
                 }
             }
             break;
@@ -498,14 +497,14 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
         default:
             if (token.data !== null && typeof token.data === "object") {
                 // Handle nested source token.
-                let handle = getHandler(token.type),
-                    inst = getInstance(token.type);
+                const handle = getHandler(token.type);
+                const ins = getInstance(token.type);
 
                 data = compose(token.data, refMap); // try to compose first
 
                 // Try to call registered parsing handler to get expected data.
                 data = handle
-                    ? handle.call(inst || data, data)
+                    ? handle.call(ins || data, data)
                     : data;
             } else if (token.type !== "comment") {
                 data = token.data;
@@ -518,13 +517,13 @@ function compose(token: SourceToken, refMap: { [path: string]: string }): any {
 
 /** Composes a token or token tree to a JavaScript object. */
 export function composeToken(token: SourceToken): any {
-    let refMap = {},
-        data = compose(token.type === "root" ? token.data : token, refMap);
+    const refMap: Record<string, string> = Object.create(null);
+    const data = compose(token.type === "root" ? token.data : token, refMap);
 
     // Sets all references according to the map.
-    for (let path in refMap) {
-        let target = refMap[path];
-        let ref = target ? get(data, target) : data;
+    for (const path in refMap) {
+        const target = refMap[path];
+        const ref = target ? get(data, target) : data;
         set(data, path.slice(2), ref);
     }
 
@@ -532,17 +531,19 @@ export function composeToken(token: SourceToken): any {
 }
 
 /** Gets the root token (and the cursor) of the given FRON string. */
-export function prepareParser(str: string, filename: string): [
+export function prepareParser(str: string, filename: string = ""): [
     SourceToken<"root">,
     CursorToken
-] {
-    let type = typeof str;
+] | null {
+    const type = typeof str;
 
     if (type !== "string") {
         throw new TypeError(`A string value was expected, ${type} given`);
-    } else if (!str) return null;
+    } else if (!str) {
+        return null;
+    }
 
-    let cursor = {
+    const cursor = {
         index: 0,
         line: 1,
         column: 1,
@@ -570,11 +571,15 @@ export function prepareParser(str: string, filename: string): [
  */
 export function parseToken(
     str: string,
-    filename?: string,
-    listener?: (token: SourceToken) => void
-): SourceToken<"root"> {
-    let [rootToken, cursor] = prepareParser(str, filename);
+    filename: string = "",
+    listener: ((token: SourceToken) => void) | null = null
+): SourceToken<"root"> | null {
+    const result = prepareParser(str, filename);
 
+    if (!result)
+        return null;
+
+    const [rootToken, cursor] = result;
     rootToken.data = doParseToken(str, rootToken, cursor, listener);
 
     if (cursor.index < str.length) {
@@ -592,5 +597,6 @@ export function parseToken(
  *  position properly. The default value is `<anonymous>`.
  */
 export function parse(str: string, filename?: string): any {
-    return composeToken(parseToken(str, filename));
+    const token = parseToken(str, filename);
+    return token ? composeToken(token) : null;
 }
